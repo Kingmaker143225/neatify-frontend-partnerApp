@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "635803755314",
+    "project_id": "neatifyteam-partner",
+    "storage_bucket": "neatifyteam-partner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635803755314:android:bae633b9a19479d3f46d2b",
+        "android_client_info": {
+          "package_name": "com.theneatifyteam.partner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB27leBEQJ6ZWIaa6mXd7B0En2cVxZ3SO8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
