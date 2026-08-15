@@ -16,7 +16,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
+// import { supabase } from "../lib/supabase";
+import { partnerApi } from "../lib/api";
 dayjs.extend(utc);
 
 type Booking = {
@@ -55,47 +56,28 @@ const MonthlyScreen = () => {
 
   const selectedYearMonth = `${selectedYear}-${selectedMonth}`;
   const fetchMonthlyData = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const email = userData?.user?.email;
-
-    if (!email) return;
-
-    // ✅ Create LOCAL month range (IST safe)
-    // ✅ Create month range
-    const start = dayjs(`${selectedYear}-${selectedMonth}-01`)
-      .startOf("month")
-      .toISOString();
-
-    const end = dayjs(start).endOf("month").toISOString();
-
-    // ✅ Fetch ONLY that month data (BEST FIX)
-    const { data: bookings } = await supabase
-      .from("staff_earnings")
-      .select(
-        `
-    id,
-    Customer_Name,
-    AMOUNT,
-    earned_at
-  `,
-      )
-      .eq("staff_email", email)
-      .eq("payment_status", "paid")
-      .gte("earned_at", start)
-      .lte("earned_at", end)
-      .order("earned_at", { ascending: false });
-
-    // ✅ Set data directly
-    setData(bookings || []);
-
-    // ✅ Calculate total
-    const total = (bookings || []).reduce(
-      (sum: number, item: any) => sum + Number(item.AMOUNT || 0),
-      0,
+  try {
+    const response = await partnerApi.monthlyEarnings(
+      selectedYear,
+      selectedMonth
     );
 
-    setEarnings(total);
-  };
+    setData(
+      response.bookings.map((item: any) => ({
+        Customer_Name: item.customer_name,
+        AMOUNT: Number(item.amount || 0),
+        earned_at: item.earned_at,
+      }))
+    );
+
+    setEarnings(Number(response.earnings || 0));
+  } catch (error) {
+    console.error("Failed to fetch monthly earnings:", error);
+
+    setData([]);
+    setEarnings(0);
+  }
+};
 
   useEffect(() => {
     fetchMonthlyData();

@@ -2115,16 +2115,49 @@ export interface ReferralHistoryResponse {
   referrals: ReferralHistoryItem[];
 }
 
-export interface NotificationsResponse {
-  notifications: Array<{
+export interface MonthlyEarningsResponse {
+  year: number;
+  month: string;
+  earnings: number;
+  bookings: {
     id: string;
-    title: string;
-    body: string;
-    is_read: boolean;
-    created_at: string;
-    data?: Record<string, any>;
-  }>;
+    customer_name: string;
+    amount: number;
+    earned_at: string;
+  }[];
 }
+
+export interface PendingPaymentsResponse {
+  total_pending: number;
+  count: number;
+  bookings: {
+    id: string;
+    customer_name: string;
+    amount: number;
+    earned_at: string;
+    payment_status: string;
+  }[];
+}
+export interface PartnerNotification {
+  id: string;
+  staff_email?: string;
+  title: string;
+  body: string;
+  type?: string;
+  is_read: boolean;
+  created_at: string;
+
+  customer_name?: string;
+  booking_date?: string;
+  booking_time?: string;
+  phone_number?: string;
+  full_address?: string;
+  services?: {
+    title: string;
+  }[];
+}
+
+
 
 export interface HeroImagesResponse {
   images: Array<{
@@ -2459,6 +2492,58 @@ referralHistory(): Promise<ReferralHistoryResponse> {
   );
 },
 
+monthlyEarnings(
+  year: number,
+  month: string,
+): Promise<MonthlyEarningsResponse> {
+  return apiRequest<MonthlyEarningsResponse>(
+    `/api/v1/partner/earnings/monthly?year=${year}&month=${month}`,
+  );
+},
+
+pendingPayments(): Promise<PendingPaymentsResponse> {
+  return apiRequest<PendingPaymentsResponse>(
+    "/api/v1/partner/earnings/pending",
+  );
+},
+
+notifications(): Promise<PartnerNotification[]> {
+  return apiRequest<PartnerNotification[]>(
+    "/api/v1/partner/notifications",
+  );
+},
+
+markNotificationRead(
+  notificationId: string,
+) {
+  return apiRequest(
+    `/api/v1/partner/notifications/${notificationId}/read`,
+    {
+      method: "PATCH",
+    },
+  );
+},
+
+deleteNotification(
+  notificationId: string,
+) {
+  return apiRequest(
+    `/api/v1/partner/notifications/${notificationId}`,
+    {
+      method: "DELETE",
+    },
+  );
+},
+
+deleteAllNotifications() {
+  return apiRequest(
+    "/api/v1/partner/notifications",
+    {
+      method: "DELETE",
+    },
+  );
+},
+
   // =====================================================
   // UPDATE LIVE LOCATION
   // =====================================================
@@ -2503,13 +2588,7 @@ referralHistory(): Promise<ReferralHistoryResponse> {
     });
   },
 
-  // =====================================================
-  // NOTIFICATIONS
-  // =====================================================
-
-  notifications(): Promise<NotificationsResponse> {
-    return apiRequest<NotificationsResponse>("/api/v1/partner/notifications");
-  },
+  
 
   // =====================================================
   // HERO IMAGES

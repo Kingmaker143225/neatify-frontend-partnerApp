@@ -11,7 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
+// import { supabase } from "../lib/supabase";
+import { partnerApi } from "../lib/api";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
@@ -30,57 +31,30 @@ export default function PendingPayments() {
   const [loading, setLoading] = useState(true);
 
   const fetchPendingData = async () => {
-    setLoading(true);
+  setLoading(true);
 
-    const { data: userData } = await supabase.auth.getUser();
-    const email = userData?.user?.email;
+  try {
+    const response = await partnerApi.pendingPayments();
 
-    if (!email) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: completedBookings } = await supabase
-      .from("bookings")
-      .select("id, customer_name, staff_earned_amount, work_ended_at")
-      .eq("assigned_staff_email", email)
-      .eq("work_status", "COMPLETED")
-      .order("work_ended_at", { ascending: false });
-
-    const bookingIds = (completedBookings || []).map((b) => b.id);
-    let paymentMap: Record<string, string> = {};
-
-    if (bookingIds.length > 0) {
-      const { data: earningsData } = await supabase
-        .from("staff_earnings")
-        .select("booking_id, payment_status")
-        .in("booking_id", bookingIds);
-
-      earningsData?.forEach((e) => {
-        if (e.booking_id) paymentMap[e.booking_id] = e.payment_status;
-      });
-    }
-
-    const pendingList: Booking[] = (completedBookings || [])
-      .map((item) => ({
+    setData(
+      response.bookings.map((item) => ({
         id: item.id,
-        Customer_Name: item.customer_name || "Customer",
-        AMOUNT: Number(item.staff_earned_amount || 0),
-        earned_at: item.work_ended_at,
-        payment_status: paymentMap[item.id] || "pending",
-      }))
-      .filter((item) => item.payment_status?.toLowerCase() !== "paid");
-
-    setData(pendingList);
-
-    const sum = pendingList.reduce(
-      (acc: number, item: Booking) => acc + Number(item.AMOUNT || 0),
-      0
+        Customer_Name: item.customer_name,
+        AMOUNT: Number(item.amount || 0),
+        earned_at: item.earned_at,
+      })),
     );
 
-    setTotal(sum);
+    setTotal(Number(response.total_pending || 0));
+  } catch (error) {
+    console.error("Failed to fetch pending payments:", error);
+
+    setData([]);
+    setTotal(0);
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   useEffect(() => {
     fetchPendingData();

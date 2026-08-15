@@ -6431,15 +6431,16 @@ export default function MyRoleScreen() {
   );
 
   /* ================= Notifications load ================= */
-  const loadNotifications = async () => {
-    try {
-      const data = await partnerApi.notifications();
-      setNotifications(Array.isArray(data) ? data : data?.notifications || []);
-    } catch (error) {
-      console.error("❌ Failed to load notifications:", error);
-      setNotifications([]);
-    }
-  };
+const loadNotifications = async () => {
+  try {
+    const data = await partnerApi.notifications();
+
+    setNotifications(data);
+  } catch (error) {
+    console.error("❌ Failed to load notifications:", error);
+    setNotifications([]);
+  }
+};
 
   /* ================= FETCH SLIDES ================= */
   const fetchSlides = async () => {

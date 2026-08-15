@@ -17,7 +17,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
+// import { supabase } from "../lib/supabase";
+import { partnerApi } from "../lib/api";
 
 export default function NewServices() {
   const [refreshing, setRefreshing] = useState(false);
@@ -30,49 +31,25 @@ export default function NewServices() {
   const [deleteType, setDeleteType] = useState<"single" | "all" | null>(null);
 
   const loadNotifications = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-
-    const email = userData.user?.email;
-
-    if (!email) return;
-
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("staff_email", email)
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-
-      return;
-    }
+  try {
+    const data = await partnerApi.notifications();
 
     console.log("NOTIFICATIONS:", data);
 
     setNotifications(data || []);
-  };
+  } catch (error) {
+    console.error("Failed to load notifications:", error);
+
+    Alert.alert(
+      "Error",
+      "Failed to load notifications.",
+    );
+  }
+};
 
   useEffect(() => {
-    loadNotifications();
-
-    const channel = supabase
-      .channel("notifications-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
-        () => {
-          loadNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  loadNotifications();
+}, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -294,31 +271,26 @@ export default function NewServices() {
                   // ✅ MARK READ
 
                   if (!item.is_read) {
-                    const { data, error } = await supabase
-                      .from("notifications")
-                      .update({
-                        is_read: true,
-                      })
-                      .eq("id", item.id)
-                      .select();
+  try {
+    await partnerApi.markNotificationRead(item.id);
 
-                    console.log("UPDATE RESULT:", data);
-
-                    console.log("UPDATE ERROR:", error);
-
-                    if (!error) {
-                      setNotifications(
-                        notifications.map((n) =>
-                          n.id === item.id
-                            ? {
-                                ...n,
-                                is_read: true,
-                              }
-                            : n,
-                        ),
-                      );
-                    }
-                  }
+    setNotifications(
+      notifications.map((n) =>
+        n.id === item.id
+          ? {
+              ...n,
+              is_read: true,
+            }
+          : n,
+      ),
+    );
+  } catch (error) {
+    console.error(
+      "Failed to mark notification as read:",
+      error,
+    );
+  }
+}
                 }}
               >
                 {/* ICON */}
@@ -515,40 +487,52 @@ export default function NewServices() {
                   style={styles.deleteBtn}
                   onPress={async () => {
                     if (deleteType === "single") {
-                      const { error } = await supabase
-                        .from("notifications")
-                        .delete()
-                        .in("id", selectedItems);
+  try {
+    await Promise.all(
+      selectedItems.map((id) =>
+        partnerApi.deleteNotification(String(id)),
+      ),
+    );
 
-                      if (!error) {
-                        setNotifications(
-                          notifications.filter(
-                            (n) => !selectedItems.includes(n.id),
-                          ),
-                        );
+    setNotifications(
+      notifications.filter(
+        (n) => !selectedItems.includes(n.id),
+      ),
+    );
 
-                        setSelectedItems([]);
-                      }
-                    }
+    setSelectedItems([]);
+  } catch (error) {
+    console.error(
+      "Failed to delete selected notifications:",
+      error,
+    );
+
+    Alert.alert(
+      "Error",
+      "Failed to delete selected notifications.",
+    );
+  }
+}
 
                     if (deleteType === "all") {
-                      const { data: userData } = await supabase.auth.getUser();
+  try {
+    await partnerApi.deleteAllNotifications();
 
-                      const email = userData.user?.email;
+    setNotifications([]);
 
-                      if (!email) return;
+    setSelectedItems([]);
+  } catch (error) {
+    console.error(
+      "Failed to delete all notifications:",
+      error,
+    );
 
-                      const { error } = await supabase
-                        .from("notifications")
-                        .delete()
-                        .eq("staff_email", email);
-
-                      if (!error) {
-                        setNotifications([]);
-
-                        setSelectedItems([]);
-                      }
-                    }
+    Alert.alert(
+      "Error",
+      "Failed to delete all notifications.",
+    );
+  }
+}
 
                     setShowDeleteModal(false);
                   }}
