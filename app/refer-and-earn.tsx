@@ -16,7 +16,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { supabase } from "../lib/supabase";
+// import { supabase } from "../lib/supabase";
+import { partnerApi } from "../lib/api";
 
 export default function ReferAndEarnScreen() {
   const [referralCode, setReferralCode] = useState("");
@@ -38,63 +39,32 @@ export default function ReferAndEarnScreen() {
   };
 
   const loadReferralCode = async () => {
-    const { data } = await supabase.auth.getUser();
+  try {
+    const response =
+      await partnerApi.referralSummary();
 
-    if (!data.user) return;
+    setReferralCode(
+      response.referral_code || ""
+    );
 
-    const userId = data.user.id;
+    setReferralCount(
+      Number(response.referral_count || 0)
+    );
 
-    // FETCH REFERRAL CODE
-    const { data: profile } = await supabase
-      .from("staff_profile")
-      .select("referral_code")
-      .eq("id", userId)
-      .single();
+    setTotalRewards(
+      Number(response.total_rewards || 0)
+    );
+  } catch (error) {
+    console.log(
+      "❌ Failed to load referral summary:",
+      error
+    );
 
-    if (profile?.referral_code) {
-      setReferralCode(profile.referral_code);
-    }
-
-    // FETCH REFERRAL COUNT
-    const { count } = await supabase
-      .from("staff_profile")
-      .select("*", { count: "exact", head: true })
-      .eq("referred_by", userId);
-
-    setReferralCount(count || 0);
-
-    // FETCH ONLY CURRENT USER'S REFERRAL REWARDS
-
-    const { data: referredUsers } = await supabase
-      .from("staff_profile")
-      .select("referral_form_id")
-      .eq("referred_by", userId);
-
-    let totalEarned = 0;
-
-    if (referredUsers?.length) {
-      const referralFormIds = referredUsers
-        .map((user) => user.referral_form_id)
-        .filter(Boolean);
-
-      if (referralFormIds.length > 0) {
-        const { data: rewardsData } = await supabase
-          .from("staff_referral_forms")
-          .select("bonus_amount, bonus_status")
-          .in("id", referralFormIds);
-
-        totalEarned =
-          rewardsData?.reduce((sum, item) => {
-            if (item.bonus_status === "paid") {
-              return sum + Number(item.bonus_amount || 0);
-            }
-            return sum;
-          }, 0) || 0;
-      }
-    }
-
-    setTotalRewards(totalEarned);
-  };
+    setReferralCode("");
+    setReferralCount(0);
+    setTotalRewards(0);
+  }
+};
 
   const referralLink =
     `https://docs.google.com/forms/d/e/1FAIpQLSdla23ak9gah9ttKBOT-zpk36EqyEMHDjrDiPIY_rWMN5Gxtw/viewform?usp=pp_url&entry.441806303=` +

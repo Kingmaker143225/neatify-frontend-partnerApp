@@ -15,10 +15,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { supabase } from "../lib/supabase";
+// import { supabase } from "../lib/supabase";
+
+import { partnerApi } from "../lib/api";
+import type { ReferralHistoryItem } from "../lib/api";
 
 export default function ReferralHistoryScreen() {
-  const [referrals, setReferrals] = useState([]);
+  // const [referrals, setReferrals] = useState([]);
+  const [referrals, setReferrals] =
+  useState<ReferralHistoryItem[]>([]);
   const [selectedReward, setSelectedReward] = useState<any>(null);
   const [shownRewards, setShownRewards] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,60 +40,28 @@ export default function ReferralHistoryScreen() {
   };
 
   const loadReferrals = async () => {
-    const { data: authData } = await supabase.auth.getUser();
+  try {
+    const response =
+      await partnerApi.referralHistory();
 
-    if (!authData.user) return;
+    const referralData =
+      response.referrals || [];
 
-    const userId = authData.user.id;
+    setReferrals(referralData);
 
-    // FETCH REFERRED USERS
-    const { data: referredUsers } = await supabase
-      .from("staff_profile")
-      .select("*")
-      .eq("referred_by", userId);
-
-    console.log("REFERRED USERS:", referredUsers);
-
-    if (!referredUsers || referredUsers.length === 0) {
-      setReferrals([]);
-      return;
-    }
-
-    // FETCH COMPLETED BOOKINGS
-    const updatedData = await Promise.all(
-      referredUsers.map(async (user: any) => {
-        const { data: referralData } = await supabase
-          .from("staff_referral_forms")
-          .select("completed_booking, bonus_status, bonus_amount")
-          .eq("id", user.referral_form_id)
-          .single();
-
-        console.log(
-          "REFERRAL MATCH:",
-          user.name,
-          user.referral_form_id,
-          referralData,
-        );
-        return {
-          ...user,
-          completed_booking: referralData?.completed_booking || 0,
-          bonus_status: referralData?.bonus_status || "pending",
-          bonus_amount: referralData?.bonus_amount || 0,
-        };
-      }),
+    setTotalRewards(
+      Number(response.total_rewards || 0)
+    );
+  } catch (error) {
+    console.log(
+      "❌ Failed to load referral history:",
+      error
     );
 
-    const totalEarned = updatedData.reduce((sum, item: any) => {
-      if (item.bonus_status === "paid") {
-        return sum + Number(item.bonus_amount || 0);
-      }
-      return sum;
-    }, 0);
-
-    setTotalRewards(totalEarned);
-
-    setReferrals(updatedData as any);
-  };
+    setReferrals([]);
+    setTotalRewards(0);
+  }
+};
 
   const renderItem = ({ item }: any) => {
     const progressWidth: DimensionValue = `${Math.min(
