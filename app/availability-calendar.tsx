@@ -4,258 +4,258 @@ export default function AvailabilityCalendar() {
   return <Redirect href="/my-role" />;
 }
 
-/*
-ORIGINAL AVAILABILITY CALENDAR IMPLEMENTATION (COMMENTED OUT FOR PRESERVATION)
+// /*
+// ORIGINAL AVAILABILITY CALENDAR IMPLEMENTATION (COMMENTED OUT FOR PRESERVATION)
 
-import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Calendar } from "react-native-calendars";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
+// import { Ionicons } from "@expo/vector-icons";
+// import { Image } from "expo-image";
+// import { router, useFocusEffect } from "expo-router";
+// import { useCallback, useState } from "react";
+// import {
+//   StatusBar,
+//   StyleSheet,
+//   Text,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import { Calendar } from "react-native-calendars";
+// import { SafeAreaView } from "react-native-safe-area-context";
+// import { supabase } from "../lib/supabase";
 
-export function DisabledAvailabilityCalendar() {
-  const [markedDates, setMarkedDates] = useState<any>({});
-  const [mode, setMode] = useState("available");
-  const [hasSavedData, setHasSavedData] = useState(false);
+// export function DisabledAvailabilityCalendar() {
+//   const [markedDates, setMarkedDates] = useState<any>({});
+//   const [mode, setMode] = useState("available");
+//   const [hasSavedData, setHasSavedData] = useState(false);
 
-  const month = new Date().toISOString().slice(0, 7);
+//   const month = new Date().toISOString().slice(0, 7);
 
-  const today = new Date();
-  const maxDate = new Date();
-  maxDate.setDate(today.getDate() + 90);
+//   const today = new Date();
+//   const maxDate = new Date();
+//   maxDate.setDate(today.getDate() + 90);
 
-  const loadAvailability = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return;
+//   const loadAvailability = async () => {
+//     const { data: userData } = await supabase.auth.getUser();
+//     if (!userData?.user) return;
 
-    const userId = userData.user.id;
+//     const userId = userData.user.id;
 
-    const { data, error } = await supabase
-      .from("staff_monthly_availability")
-      .select("calendar_data")
-      .eq("staff_id", userId)
-      .eq("month", month)
-      .maybeSingle();
+//     const { data, error } = await supabase
+//       .from("staff_monthly_availability")
+//       .select("calendar_data")
+//       .eq("staff_id", userId)
+//       .eq("month", month)
+//       .maybeSingle();
 
-    if (error) {
-      console.log("Fetch error:", error);
-      return;
-    }
+//     if (error) {
+//       console.log("Fetch error:", error);
+//       return;
+//     }
 
-    if (!data?.calendar_data) {
-      setMarkedDates({});
-      setHasSavedData(false);
-      return;
-    }
+//     if (!data?.calendar_data) {
+//       setMarkedDates({});
+//       setHasSavedData(false);
+//       return;
+//     }
 
-    const marks: any = {};
+//     const marks: any = {};
 
-    Object.entries(data.calendar_data).forEach(([date, status]: any) => {
-      marks[date] = {
-        selected: true,
-        selectedColor: status === "available" ? "#16a34a" : "#ef4444",
-      };
-    });
+//     Object.entries(data.calendar_data).forEach(([date, status]: any) => {
+//       marks[date] = {
+//         selected: true,
+//         selectedColor: status === "available" ? "#16a34a" : "#ef4444",
+//       };
+//     });
 
-    setMarkedDates(marks);
-    setHasSavedData(true);
-  };
+//     setMarkedDates(marks);
+//     setHasSavedData(true);
+//   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadAvailability();
-    }, []),
-  );
+//   useFocusEffect(
+//     useCallback(() => {
+//       loadAvailability();
+//     }, []),
+//   );
 
-  const onDayPress = (day: any) => {
-    const date = day.dateString;
-    const existing = markedDates[date];
+//   const onDayPress = (day: any) => {
+//     const date = day.dateString;
+//     const existing = markedDates[date];
 
-    if (existing) {
-      const updated = { ...markedDates };
-      delete updated[date];
-      setMarkedDates(updated);
-    } else {
-      const color = mode === "available" ? "#16a34a" : "#ef4444";
+//     if (existing) {
+//       const updated = { ...markedDates };
+//       delete updated[date];
+//       setMarkedDates(updated);
+//     } else {
+//       const color = mode === "available" ? "#16a34a" : "#ef4444";
 
-      setMarkedDates({
-        ...markedDates,
-        [date]: {
-          selected: true,
-          selectedColor: color,
-        },
-      });
-    }
-  };
+//       setMarkedDates({
+//         ...markedDates,
+//         [date]: {
+//           selected: true,
+//           selectedColor: color,
+//         },
+//       });
+//     }
+//   };
 
-  const saveAvailability = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return;
+//   const saveAvailability = async () => {
+//     const { data: userData } = await supabase.auth.getUser();
+//     if (!userData?.user) return;
 
-    const userId = userData.user.id;
+//     const userId = userData.user.id;
 
-    const { data: profile } = await supabase
-      .from("staff_profile")
-      .select("name,email")
-      .eq("id", userId)
-      .single();
+//     const { data: profile } = await supabase
+//       .from("staff_profile")
+//       .select("name,email")
+//       .eq("id", userId)
+//       .single();
 
-    const json: any = {};
+//     const json: any = {};
 
-    Object.entries(markedDates).forEach(([date, value]: any) => {
-      json[date] =
-        value.selectedColor === "#16a34a" ? "available" : "not_available";
-    });
+//     Object.entries(markedDates).forEach(([date, value]: any) => {
+//       json[date] =
+//         value.selectedColor === "#16a34a" ? "available" : "not_available";
+//     });
 
-    const { error } = await supabase.from("staff_monthly_availability").upsert(
-      {
-        staff_id: userId,
-        staff_name: profile?.name,
-        staff_email: profile?.email,
-        month: month,
-        calendar_data: json,
-      },
-      { onConflict: "staff_id,month" },
-    );
+//     const { error } = await supabase.from("staff_monthly_availability").upsert(
+//       {
+//         staff_id: userId,
+//         staff_name: profile?.name,
+//         staff_email: profile?.email,
+//         month: month,
+//         calendar_data: json,
+//       },
+//       { onConflict: "staff_id,month" },
+//     );
 
-    if (error) {
-      console.log("Save error:", error);
-      return;
-    }
+//     if (error) {
+//       console.log("Save error:", error);
+//       return;
+//     }
 
-    setHasSavedData(true);
+//     setHasSavedData(true);
 
-    await loadAvailability();
+//     await loadAvailability();
 
-    alert("Availability Updated");
-  };
+//     alert("Availability Updated");
+//   };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <StatusBar backgroundColor="#FFD700" barStyle="dark-content" />
+//   return (
+//     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+//       <StatusBar backgroundColor="#FFD700" barStyle="dark-content" />
 
-      <View style={styles.header}>
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-          contentFit="contain"
-        />
+//       <View style={styles.header}>
+//         <Image
+//           source={require("../assets/images/logo.png")}
+//           style={styles.logo}
+//           contentFit="contain"
+//         />
 
-        <TouchableOpacity
-          onPress={() =>
-            router.canGoBack() ? router.back() : router.replace("/my-role")
-          }
-        >
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+//         <TouchableOpacity
+//           onPress={() =>
+//             router.canGoBack() ? router.back() : router.replace("/my-role")
+//           }
+//         >
+//           <Ionicons name="arrow-back" size={24} color="#000" />
+//         </TouchableOpacity>
+//       </View>
 
-      <View style={{ flex: 1, padding: 20 }}>
-        <Text style={styles.title}>My Availability Calendar</Text>
+//       <View style={{ flex: 1, padding: 20 }}>
+//         <Text style={styles.title}>My Availability Calendar</Text>
 
-        <View style={styles.modeRow}>
-          <TouchableOpacity
-            style={[styles.modeBtn, mode === "available" && styles.green]}
-            onPress={() => setMode("available")}
-          >
-            <Text style={styles.modeText}>Available</Text>
-          </TouchableOpacity>
+//         <View style={styles.modeRow}>
+//           <TouchableOpacity
+//             style={[styles.modeBtn, mode === "available" && styles.green]}
+//             onPress={() => setMode("available")}
+//           >
+//             <Text style={styles.modeText}>Available</Text>
+//           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.modeBtn, mode === "not_available" && styles.red]}
-            onPress={() => setMode("not_available")}
-          >
-            <Text style={styles.modeText}>Not Available</Text>
-          </TouchableOpacity>
-        </View>
+//           <TouchableOpacity
+//             style={[styles.modeBtn, mode === "not_available" && styles.red]}
+//             onPress={() => setMode("not_available")}
+//           >
+//             <Text style={styles.modeText}>Not Available</Text>
+//           </TouchableOpacity>
+//         </View>
 
-        <Calendar
-          minDate={today.toISOString().split("T")[0]}
-          maxDate={maxDate.toISOString().split("T")[0]}
-          onDayPress={onDayPress}
-          markedDates={markedDates}
-          theme={{
-            todayTextColor: "#FFD700",
-          }}
-        />
+//         <Calendar
+//           minDate={today.toISOString().split("T")[0]}
+//           maxDate={maxDate.toISOString().split("T")[0]}
+//           onDayPress={onDayPress}
+//           markedDates={markedDates}
+//           theme={{
+//             todayTextColor: "#FFD700",
+//           }}
+//         />
 
-        <TouchableOpacity style={styles.saveBtn} onPress={saveAvailability}>
-          <Text style={styles.saveText}>
-            {hasSavedData ? "Update Availability" : "Save Availability"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
-}
+//         <TouchableOpacity style={styles.saveBtn} onPress={saveAvailability}>
+//           <Text style={styles.saveText}>
+//             {hasSavedData ? "Update Availability" : "Save Availability"}
+//           </Text>
+//         </TouchableOpacity>
+//       </View>
+//     </SafeAreaView>
+//   );
+// }
 
-const styles = StyleSheet.create({
-  header: {
-    height: 70,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+// const styles = StyleSheet.create({
+//   header: {
+//     height: 70,
+//     backgroundColor: "#ffffff",
+//     paddingHorizontal: 20,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//   },
 
-  logo: {
-    width: 190,
-    height: 64,
-  },
+//   logo: {
+//     width: 190,
+//     height: 64,
+//   },
 
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 15,
-  },
+//   title: {
+//     fontSize: 18,
+//     fontWeight: "800",
+//     marginBottom: 15,
+//   },
 
-  modeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
+//   modeRow: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     marginBottom: 15,
+//   },
 
-  modeBtn: {
-    width: "48%",
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#eee",
-    alignItems: "center",
-  },
+//   modeBtn: {
+//     width: "48%",
+//     padding: 10,
+//     borderRadius: 10,
+//     backgroundColor: "#eee",
+//     alignItems: "center",
+//   },
 
-  green: {
-    backgroundColor: "#16a34a",
-  },
+//   green: {
+//     backgroundColor: "#16a34a",
+//   },
 
-  red: {
-    backgroundColor: "#ef4444",
-  },
+//   red: {
+//     backgroundColor: "#ef4444",
+//   },
 
-  modeText: {
-    fontWeight: "700",
-  },
+//   modeText: {
+//     fontWeight: "700",
+//   },
 
-  saveBtn: {
-    marginTop: 20,
-    backgroundColor: "#FFD700",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
+//   saveBtn: {
+//     marginTop: 20,
+//     backgroundColor: "#FFD700",
+//     padding: 14,
+//     borderRadius: 10,
+//     alignItems: "center",
+//   },
 
-  saveText: {
-    fontWeight: "700",
-  },
-});
-*/
+//   saveText: {
+//     fontWeight: "700",
+//   },
+// });
+// */
 
