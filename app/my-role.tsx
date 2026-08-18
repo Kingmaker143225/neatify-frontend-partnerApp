@@ -12689,6 +12689,19 @@ export default function MyRoleScreen() {
                 trackColor={{ false: "#ede4e4", true: "#0fd357" }}
               />
             </View>
+            {/* AVAILABILITY CALENDAR */}
+<View style={styles.actionWrapper}>
+  <TouchableOpacity
+    style={[styles.primaryBtn, styles.actionBtnRow]}
+    onPress={() => router.push("/availability-calendar")}
+  >
+    <Ionicons name="calendar-outline" size={18} color="#000" />
+
+    <Text style={styles.primaryBtnText}>
+      My Availability Calendar
+    </Text>
+  </TouchableOpacity>
+</View>
 
             {/* WORKING HOURS SECTION */}
             <View style={styles.sectionHeaderWrapper}>
@@ -12718,6 +12731,7 @@ export default function MyRoleScreen() {
                 </Text>
               </View>
             </View>
+            
 
             {/* SERVICE SUMMARY */}
             <View style={styles.sectionHeaderWithSubRow}>
@@ -12758,7 +12772,7 @@ export default function MyRoleScreen() {
             </View>
 
             {/* VIEW ZONE MAP BUTTON */}
-            <View style={{ marginHorizontal: 16, marginTop: 12 }}>
+            {/* <View style={{ marginHorizontal: 16, marginTop: 12 }}>
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: '#0284c7' }]}
                 onPress={openZoneMap}
@@ -12766,7 +12780,7 @@ export default function MyRoleScreen() {
                 <Ionicons name="map-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
                 <Text style={[styles.primaryBtnText, { color: '#fff' }]}>🗺️ VIEW ZONE MAP</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
         )}
       />

@@ -3492,3 +3492,34 @@ export const partnerApi = {
     });
   },
 };
+
+
+// =========================================================
+// AVAILABILITY
+// =========================================================
+export const getMyAvailability = async (
+  month: string
+) => {
+  return apiRequest(
+    `/api/v1/partner/availability?month=${encodeURIComponent(month)}`,
+    {
+      method: "GET",
+    }
+  );
+};
+
+export const saveMyAvailability = async (
+  month: string,
+  calendarData: Record<string, string>
+) => {
+  return apiRequest(
+    "/api/v1/partner/availability",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        month,
+        calendar_data: calendarData,
+      }),
+    }
+  );
+};

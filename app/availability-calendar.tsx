@@ -1,8 +1,429 @@
-import { Redirect } from "expo-router";
+
+
+
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+
+import {
+  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { Calendar } from "react-native-calendars";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import {
+  getMyAvailability,
+  saveMyAvailability,
+} from "../lib/api";
+
 
 export default function AvailabilityCalendar() {
-  return <Redirect href="/my-role" />;
+  const [markedDates, setMarkedDates] =
+    useState<any>({});
+
+  const [mode, setMode] =
+    useState("available");
+
+  const [hasSavedData, setHasSavedData] =
+    useState(false);
+
+  // =====================================================
+  // CURRENT MONTH
+  // =====================================================
+
+  const month =
+    new Date()
+      .toISOString()
+      .slice(0, 7);
+
+  // =====================================================
+  // DATE RANGE
+  // =====================================================
+
+  const today = new Date();
+
+  const maxDate = new Date();
+
+  maxDate.setDate(
+    today.getDate() + 90
+  );
+
+  // =====================================================
+  // LOAD AVAILABILITY
+  // =====================================================
+
+  const loadAvailability = async () => {
+
+    try {
+
+      const response =
+        await getMyAvailability(month);
+
+      // const data =
+      //   response?.data;
+      const data = (response as any)?.data;
+
+      if (!data?.calendar_data) {
+
+        setMarkedDates({});
+        setHasSavedData(false);
+
+        return;
+      }
+
+      const marks: any = {};
+
+      Object.entries(
+        data.calendar_data
+      ).forEach(
+        ([date, status]: any) => {
+
+          marks[date] = {
+            selected: true,
+
+            selectedColor:
+              status === "available"
+                ? "#16a34a"
+                : "#ef4444",
+          };
+        }
+      );
+
+      setMarkedDates(marks);
+
+      setHasSavedData(true);
+
+    } catch (error) {
+
+      console.log(
+        "❌ Availability fetch error:",
+        error
+      );
+
+    }
+  };
+
+  // =====================================================
+  // LOAD WHEN SCREEN FOCUSES
+  // =====================================================
+
+  useFocusEffect(
+    useCallback(() => {
+
+      loadAvailability();
+
+    }, [])
+  );
+
+  // =====================================================
+  // DAY PRESS
+  // =====================================================
+
+  const onDayPress = (
+    day: any
+  ) => {
+
+    const date =
+      day.dateString;
+
+    const existing =
+      markedDates[date];
+
+    if (existing) {
+
+      const updated = {
+        ...markedDates,
+      };
+
+      delete updated[date];
+
+      setMarkedDates(updated);
+
+    } else {
+
+      const color =
+        mode === "available"
+          ? "#16a34a"
+          : "#ef4444";
+
+      setMarkedDates({
+        ...markedDates,
+
+        [date]: {
+          selected: true,
+          selectedColor: color,
+        },
+      });
+    }
+  };
+
+  // =====================================================
+  // SAVE AVAILABILITY
+  // =====================================================
+
+  const saveAvailability = async () => {
+
+    try {
+
+      const calendarData: Record<
+        string,
+        string
+      > = {};
+
+      Object.entries(
+        markedDates
+      ).forEach(
+        ([date, value]: any) => {
+
+          calendarData[date] =
+            value.selectedColor ===
+            "#16a34a"
+              ? "available"
+              : "not_available";
+        }
+      );
+
+      await saveMyAvailability(
+        month,
+        calendarData
+      );
+
+      setHasSavedData(true);
+
+      await loadAvailability();
+
+      Alert.alert(
+        "Success",
+        "Availability Updated"
+      );
+
+    } catch (error) {
+
+      console.log(
+        "❌ Availability save error:",
+        error
+      );
+
+      Alert.alert(
+        "Error",
+        "Unable to update availability."
+      );
+    }
+  };
+
+  // =====================================================
+  // UI
+  // =====================================================
+
+  return (
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#fff",
+      }}
+    >
+
+      <StatusBar
+        backgroundColor="#FFD700"
+        barStyle="dark-content"
+      />
+
+      <View style={styles.header}>
+
+        <Image
+          source={require(
+            "../assets/images/logo.png"
+          )}
+          style={styles.logo}
+          contentFit="contain"
+        />
+
+        <TouchableOpacity
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/my-role")
+          }
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color="#000"
+          />
+        </TouchableOpacity>
+
+      </View>
+
+      <View
+        style={{
+          flex: 1,
+          padding: 20,
+        }}
+      >
+
+        <Text style={styles.title}>
+          My Availability Calendar
+        </Text>
+
+        <View style={styles.modeRow}>
+
+          <TouchableOpacity
+            style={[
+              styles.modeBtn,
+              mode === "available" &&
+                styles.green,
+            ]}
+            onPress={() =>
+              setMode("available")
+            }
+          >
+            <Text style={styles.modeText}>
+              Available
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modeBtn,
+              mode === "not_available" &&
+                styles.red,
+            ]}
+            onPress={() =>
+              setMode("not_available")
+            }
+          >
+            <Text style={styles.modeText}>
+              Not Available
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+
+        <Calendar
+          minDate={today
+            .toISOString()
+            .split("T")[0]}
+          maxDate={maxDate
+            .toISOString()
+            .split("T")[0]}
+          onDayPress={onDayPress}
+          markedDates={markedDates}
+          theme={{
+            todayTextColor: "#FFD700",
+          }}
+        />
+
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={saveAvailability}
+        >
+          <Text style={styles.saveText}>
+            {hasSavedData
+              ? "Update Availability"
+              : "Save Availability"}
+          </Text>
+        </TouchableOpacity>
+
+      </View>
+
+    </SafeAreaView>
+  );
 }
+
+
+// =====================================================
+// STYLES
+// =====================================================
+
+const styles = StyleSheet.create({
+
+  header: {
+    height: 70,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  logo: {
+    width: 190,
+    height: 64,
+  },
+
+  title: {
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 15,
+  },
+
+  modeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+
+  modeBtn: {
+    width: "48%",
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#eee",
+    alignItems: "center",
+  },
+
+  green: {
+    backgroundColor: "#16a34a",
+  },
+
+  red: {
+    backgroundColor: "#ef4444",
+  },
+
+  modeText: {
+    fontWeight: "700",
+  },
+
+  saveBtn: {
+    marginTop: 20,
+    backgroundColor: "#FFD700",
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  saveText: {
+    fontWeight: "700",
+  },
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // /*
 // ORIGINAL AVAILABILITY CALENDAR IMPLEMENTATION (COMMENTED OUT FOR PRESERVATION)
@@ -258,4 +679,3 @@ export default function AvailabilityCalendar() {
 //   },
 // });
 // */
-
