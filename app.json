@@ -2,14 +2,14 @@
   "expo": {
     "name": "The Neatify Team Partner",
     "slug": "neatify-partner-app",
-    "version": "6.0.0",
+    "version": "7.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "theneatifypartnerapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "6",
+      "buildNumber": "9",
       "infoPlist": {
         "UIBackgroundModes": [
           "location",
@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.theneatifyteam.partner",
-      "versionCode": 6,
+      "versionCode": 9,
       "googleServicesFile": "./android/app/google-services.json",
       "config": {
         "googleMaps": {
