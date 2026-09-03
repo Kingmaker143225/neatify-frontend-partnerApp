@@ -3825,6 +3825,20 @@ export interface PushTokenResponse {
   message: string;
 }
 
+export interface PolicyStatusResponse {
+  terms_accepted: boolean;
+  privacy_policy_accepted: boolean;
+}
+
+export interface PolicyResponse {
+  user_policies: string | null;
+  terms_and_conditions: string | null;
+}
+
+export interface AcceptPolicyResponse {
+  success: boolean;
+}
+
 // =========================================================
 // TOKEN STORAGE
 // =========================================================
@@ -4160,6 +4174,27 @@ export const partnerApi = {
   dashboard(): Promise<DashboardResponse> {
     return apiRequest<DashboardResponse>("/api/v1/partner/dashboard");
   },
+
+  getPolicyStatus(): Promise<PolicyStatusResponse> {
+  return apiRequest<PolicyStatusResponse>(
+    "/api/v1/partner/policies/status"
+  );
+},
+
+ getPolicies(): Promise<PolicyResponse> {
+  return apiRequest<PolicyResponse>(
+    "/api/v1/partner/policies"
+  );
+},
+
+acceptPolicies(): Promise<AcceptPolicyResponse> {
+  return apiRequest<AcceptPolicyResponse>(
+    "/api/v1/partner/policies/accept",
+    {
+      method: "PATCH",
+    }
+  );
+},
 
   pricingCards() {
   return apiRequest(
