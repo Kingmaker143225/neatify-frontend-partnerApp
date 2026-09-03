@@ -6,7 +6,7 @@ import * as Print from "expo-print";
 import { useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   ScrollView,
@@ -24,6 +24,7 @@ type Booking = {
   Customer_Name: string;
   AMOUNT: number;
   earned_at: string;
+  payment_status: string;
 };
 
 const MonthlyScreen = () => {
@@ -56,28 +57,34 @@ const MonthlyScreen = () => {
 
   const selectedYearMonth = `${selectedYear}-${selectedMonth}`;
   const fetchMonthlyData = async () => {
-  try {
-    const response = await partnerApi.monthlyEarnings(
-      selectedYear,
-      selectedMonth
-    );
+    try {
+      const response = await partnerApi.monthlyEarnings(
+        selectedYear,
+        selectedMonth
+      );
 
-    setData(
-      response.bookings.map((item: any) => ({
-        Customer_Name: item.customer_name,
-        AMOUNT: Number(item.amount || 0),
-        earned_at: item.earned_at,
-      }))
-    );
+      console.log(
+        "MONTHLY EARNINGS RESPONSE:",
+        JSON.stringify(response, null, 2)
+      );
 
-    setEarnings(Number(response.earnings || 0));
-  } catch (error) {
-    console.error("Failed to fetch monthly earnings:", error);
+      setData(
+        response.bookings.map((item: any) => ({
+          Customer_Name: item.customer_name,
+          AMOUNT: Number(item.amount || 0),
+          earned_at: item.earned_at,
+          payment_status: item.payment_status || "pending",
+        }))
+      );
 
-    setData([]);
-    setEarnings(0);
-  }
-};
+      setEarnings(Number(response.earnings || 0));
+    } catch (error) {
+      console.error("Failed to fetch monthly earnings:", error);
+
+      setData([]);
+      setEarnings(0);
+    }
+  };
 
   useEffect(() => {
     fetchMonthlyData();
@@ -251,10 +258,37 @@ const MonthlyScreen = () => {
                     <Text style={styles.dateText}>
                       {dayjs(item.earned_at).format("DD MMM YYYY")}
                     </Text>
+                    <Text
+                      style={{
+                        marginTop: 4,
+                        fontSize: 12,
+                        fontWeight: "700",
+                        color:
+                          item.payment_status === "paid"
+                            ? "#16a34a"
+                            : "#f97316",
+                      }}
+                    >
+                      {item.payment_status === "paid"
+                        ? "Paid"
+                        : "Pending"}
+                    </Text>
                   </View>
 
                   {/* RIGHT SIDE */}
-                  <Text style={styles.amount}>₹{item.AMOUNT}</Text>
+                  <Text
+                    style={[
+                      styles.amount,
+                      {
+                        color:
+                          item.payment_status === "paid"
+                            ? "#16a34a"
+                            : "#f97316",
+                      },
+                    ]}
+                  >
+                    ₹{item.AMOUNT}
+                  </Text>
                 </View>
               </View>
             ))

@@ -3492,49 +3492,49 @@ export default function Dashboard() {
   // const pendingEarnings = data
   //   .filter((item) => item.payment_status?.toLowerCase() !== "paid")
   //   .reduce((sum, item) => sum + Number(item.staff_earned_amount || 0), 0);
-  
+
 
   const loadPendingPayments = async () => {
-  try {
-    const response: any = await partnerApi.pendingPayments();
+    try {
+      const response: any = await partnerApi.pendingPayments();
 
-    setPendingPaymentTotal(
-      Number(response?.total_pending || 0)
-    );
-  } catch (error: any) {
-    console.error(
-      "❌ Failed to load pending payments:",
-      error?.message || error
-    );
+      setPendingPaymentTotal(
+        Number(response?.total_pending || 0)
+      );
+    } catch (error: any) {
+      console.error(
+        "❌ Failed to load pending payments:",
+        error?.message || error
+      );
 
-    setPendingPaymentTotal(0);
-  }
-};
+      setPendingPaymentTotal(0);
+    }
+  };
 
-const loadCancellationFee = async () => {
-  try {
-    const response: any = await partnerApi.bookings("cancelled");
+  const loadCancellationFee = async () => {
+    try {
+      const response: any = await partnerApi.bookings("cancelled");
 
-    const bookings = Array.isArray(response?.data)
-      ? response.data
-      : [];
+      const bookings = Array.isArray(response?.data)
+        ? response.data
+        : [];
 
-    const total = bookings.reduce(
-      (sum: number, item: any) =>
-        sum + Number(item.cancellation_fee || 0),
-      0
-    );
+      const total = bookings.reduce(
+        (sum: number, item: any) =>
+          sum + Number(item.cancellation_fee || 0),
+        0
+      );
 
-    setCancellationFee(total);
-  } catch (error: any) {
-    console.error(
-      "❌ Failed to load cancellation fee:",
-      error?.message || error
-    );
+      setCancellationFee(total);
+    } catch (error: any) {
+      console.error(
+        "❌ Failed to load cancellation fee:",
+        error?.message || error
+      );
 
-    setCancellationFee(0);
-  }
-};
+      setCancellationFee(0);
+    }
+  };
 
   const [filter, setFilter] = useState("ALL");
   const [refreshing, setRefreshing] = useState(false);
@@ -3601,6 +3601,15 @@ const loadCancellationFee = async () => {
         );
       }
 
+      console.log(
+        "Booking:",
+        bookings.map((b: any) => ({
+          customer: b.customer_name,
+          amount: b.staff_earned_amount,
+          payment_status: b.payment_status,
+        }))
+      );
+
       setData(bookings);
     } catch (error: any) {
       console.error("❌ Failed to load completed services:", error?.message || error);
@@ -3615,9 +3624,14 @@ const loadCancellationFee = async () => {
 
       const response: any = await partnerApi.dashboard();
 
-      console.log("✅ Partner dashboard response:", response);
+      console.log("Dashboard loaded");
 
       const dashboard = response?.data || response;
+
+      console.log(
+        "Dashboard earnings:",
+        dashboard?.earnings
+      );
 
       if (!dashboard) {
         console.log("⚠️ No dashboard data received");
@@ -3654,7 +3668,7 @@ const loadCancellationFee = async () => {
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
     loadCompleted(),
-    loadDashboardSummary();
+      loadDashboardSummary();
     loadPendingPayments();
     loadCancellationFee();
   }, []);
@@ -3668,7 +3682,7 @@ const loadCancellationFee = async () => {
     setRefreshing(true);
 
     try {
-      await Promise.all([loadCompleted(), loadDashboardSummary(),loadPendingPayments(),loadCancellationFee(),]);
+      await Promise.all([loadCompleted(), loadDashboardSummary(), loadPendingPayments(), loadCancellationFee(),]);
     } catch (err) {
       console.log("Refresh error:", err);
     } finally {
@@ -3726,16 +3740,40 @@ const loadCancellationFee = async () => {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
       </View>
+
+      {/* ================= PRICE CARDS BANNER ================= */}
+      <View style={styles.priceCardBanner}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.priceCardTitle}>
+            View Service Price Cards
+          </Text>
+
+          <Text style={styles.priceCardSubTitle}>
+            Know your earnings for every service
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.priceCardButton}
+          onPress={() => router.push("/pricing-details")}
+        >
+          <Text style={styles.priceCardButtonText}>
+            VIEW
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+
       {/* ================= TOTAL COUNT ================= */}
       <View style={styles.summaryContainer}>
         <TouchableOpacity
           style={styles.gridBox}
           // onPress={() => setFilter("ALL")}       ///changed 
           onPress={() => {
-  setFilter("ALL");
-  setFilterDate("");
-  loadCompleted();
-}}
+            setFilter("ALL");
+            setFilterDate("");
+            loadCompleted();
+          }}
         >
           <Text style={styles.gridTitle}>Total Completed</Text>
           <Text style={styles.gridValue}>{data.length}</Text>
@@ -3773,7 +3811,7 @@ const loadCancellationFee = async () => {
             Pending Payments
           </Text>
           <Text style={[styles.gridValue, styles.pendingGridValue]}>
-           ₹{pendingPaymentTotal}
+            ₹{pendingPaymentTotal}
           </Text>
         </TouchableOpacity>
 
@@ -3847,8 +3885,8 @@ const loadCancellationFee = async () => {
                 {sortBy === "recent"
                   ? "Recent"
                   : sortBy === "date"
-                  ? "Oldest"
-                  : "Name"}
+                    ? "Oldest"
+                    : "Name"}
               </Text>
               <Ionicons
                 name={showSortOptions ? "chevron-up" : "chevron-down"}
@@ -3948,7 +3986,9 @@ const loadCancellationFee = async () => {
                       : styles.pendingBadge,
                   ]}
                 >
-                  COMPLETED
+                  {item.payment_status?.toLowerCase() === "paid"
+                    ? "COMPLETED"
+                    : "PENDING"}
                 </Text>
                 <Text
                   style={[
@@ -4354,5 +4394,48 @@ const styles = StyleSheet.create({
 
   cancellationGridValue: {
     color: "#dc2626",
+  },
+
+  priceCardBanner: {
+    backgroundColor: "#FFF8DC",
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 12,
+    borderRadius: 18,
+    padding: 18,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+
+    borderWidth: 1.5,
+    borderColor: "#FFD700",
+  },
+
+  priceCardTitle: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 17,
+  },
+
+  priceCardSubTitle: {
+    color: "#6B7280",
+    marginTop: 5,
+    fontSize: 13,
+  },
+
+  priceCardButton: {
+    backgroundColor: "#FFD700",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+
+    borderWidth: 1,
+    borderColor: "#EAB308",
+  },
+
+  priceCardButtonText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 13,
   },
 });

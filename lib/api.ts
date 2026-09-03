@@ -4161,10 +4161,17 @@ export const partnerApi = {
     return apiRequest<DashboardResponse>("/api/v1/partner/dashboard");
   },
 
+  pricingCards() {
+  return apiRequest(
+    "/api/v1/partner/pricing-details"
+  );
+},
+
   bookings(status?: string) {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
     return apiRequest(`/api/v1/partner/bookings${query}`);
   },
+
 
   approveBooking(bookingId: string) {
     return apiRequest(`/api/v1/partner/bookings/${bookingId}/approve`, {
