@@ -3241,8 +3241,8 @@ export default function AssignedServiceDetails() {
 
         }
 
-        const bookingService = data?.booking?.services?.[0];
-        const serviceInfo = data?.service;
+        const bookingService = data?.services?.[0];
+        const serviceInfo = data?.services?.[0];
 
         if (!bookingService || !serviceInfo) {
           console.log("No service found");
