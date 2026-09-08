@@ -448,6 +448,396 @@
 
 
 
+// import Constants from "expo-constants";
+// import * as Device from "expo-device";
+// import * as Notifications from "expo-notifications";
+// import { useEffect } from "react";
+// import { Platform } from "react-native";
+
+// /**
+//  * ============================================================
+//  * 🔔 NOTIFICATION HANDLER
+//  * ============================================================
+//  *
+//  * This controls how notifications are presented while the
+//  * application is in the foreground.
+//  */
+// Notifications.setNotificationHandler({
+//   handleNotification: async (notification) => {
+//     console.log("🔥🔥🔥 HANDLER CALLED 🔥🔥🔥");
+//     console.log(
+//       "🔥 HANDLER TITLE:",
+//       notification.request.content.title
+//     );
+//     console.log(
+//       "🔥 HANDLER BODY:",
+//       notification.request.content.body
+//     );
+//     console.log(
+//       "🔥 HANDLER DATA:",
+//       notification.request.content.data
+//     );
+
+//     return {
+//       shouldShowBanner: true,
+//       shouldShowList: true,
+//       shouldPlaySound: true,
+//       shouldSetBadge: true,
+//     };
+//   },
+// });
+
+// /**
+//  * ============================================================
+//  * 📢 ANDROID NOTIFICATION CHANNEL
+//  * ============================================================
+//  */
+// async function setupNotificationChannel() {
+//   if (Platform.OS !== "android") {
+//     return;
+//   }
+
+//   try {
+//     console.log("🔔 Setting up Android notification channel...");
+
+//     await Notifications.setNotificationChannelAsync("default", {
+//       name: "default",
+//       importance: Notifications.AndroidImportance.MAX,
+//       vibrationPattern: [0, 250, 250, 250],
+//       lightColor: "#FF231F7C",
+//       sound: "default",
+//       enableVibrate: true,
+//       showBadge: true,
+//     });
+
+//     console.log("✅ Android notification channel ready");
+//   } catch (error) {
+//     console.log(
+//       "❌ Error setting Android notification channel:",
+//       error
+//     );
+//   }
+// }
+
+// /**
+//  * Initialize channel immediately.
+//  */
+// if (Platform.OS === "android") {
+//   setupNotificationChannel();
+// }
+
+// /**
+//  * ============================================================
+//  * 📱 REGISTER DEVICE FOR PUSH NOTIFICATIONS
+//  * ============================================================
+//  */
+// export async function registerForPushNotificationsAsync() {
+//   try {
+//     console.log("=================================");
+//     console.log("🔔 PUSH NOTIFICATION REGISTRATION START");
+//     console.log("=================================");
+
+//     if (!Device.isDevice) {
+//       console.log(
+//         "❌ Must use a physical device for Push Notifications"
+//       );
+//       return null;
+//     }
+
+//     /**
+//      * Check current permission
+//      */
+//     const { status: existingStatus } =
+//       await Notifications.getPermissionsAsync();
+
+//     console.log(
+//       "📌 Existing notification permission:",
+//       existingStatus
+//     );
+
+//     let finalStatus = existingStatus;
+
+//     /**
+//      * Request permission if necessary
+//      */
+//     if (existingStatus !== "granted") {
+//       console.log("📌 Requesting notification permission...");
+
+//       const { status } =
+//         await Notifications.requestPermissionsAsync();
+
+//       finalStatus = status;
+
+//       console.log(
+//         "📌 Notification permission result:",
+//         finalStatus
+//       );
+//     }
+
+//     if (finalStatus !== "granted") {
+//       console.log(
+//         "❌ Notification permission not granted!"
+//       );
+//       return null;
+//     }
+
+//     console.log("✅ Notification permission granted");
+
+//     /**
+//      * Expo EAS project ID
+//      */
+//     const projectId =
+//       Constants.expoConfig?.extra?.eas?.projectId;
+
+//     console.log("📌 Expo Project ID:", projectId);
+
+//     /**
+//      * Get Expo Push Token
+//      */
+//     const token =
+//       (
+//         await Notifications.getExpoPushTokenAsync(
+//           projectId
+//             ? { projectId }
+//             : undefined
+//         )
+//       ).data;
+
+//     console.log("=================================");
+//     console.log("✅ EXPO PUSH TOKEN:");
+//     console.log(token);
+//     console.log("=================================");
+
+//     /**
+//      * Make sure Android channel exists
+//      */
+//     await setupNotificationChannel();
+
+//     return token;
+//   } catch (error) {
+//     console.log(
+//       "❌ Error registering push notifications:",
+//       error
+//     );
+
+//     return null;
+//   }
+// }
+
+// /**
+//  * ============================================================
+//  * 🔔 NOTIFICATION LISTENER
+//  * ============================================================
+//  *
+//  * Handles:
+//  *
+//  * 1. Foreground notification
+//  * 2. Notification click
+//  * 3. App opened from a notification
+//  */
+// export const useNotificationListener = (router: any) => {
+//   useEffect(() => {
+//     console.log(
+//       "🔥🔥🔥 NOTIFICATION LISTENER REGISTERED 🔥🔥🔥"
+//     );
+
+//     /**
+//      * ========================================================
+//      * 🔔 FOREGROUND NOTIFICATION
+//      * ========================================================
+//      */
+//     const notificationSub =
+//       Notifications.addNotificationReceivedListener(
+//         (notification) => {
+//           console.log(
+//             "🔥🔥🔥 FOREGROUND NOTIFICATION RECEIVED 🔥🔥🔥"
+//           );
+
+//           console.log(
+//             "📌 TITLE:",
+//             notification.request.content.title
+//           );
+
+//           console.log(
+//             "📌 BODY:",
+//             notification.request.content.body
+//           );
+
+//           console.log(
+//             "📌 DATA:",
+//             notification.request.content.data
+//           );
+
+//           console.log(
+//             "📌 FULL NOTIFICATION:",
+//             notification
+//           );
+//         }
+//       );
+
+//     /**
+//      * ========================================================
+//      * 👉 NOTIFICATION CLICK / RESPONSE
+//      * ========================================================
+//      */
+//     const responseSub =
+//       Notifications.addNotificationResponseReceivedListener(
+//         (response) => {
+//           const data =
+//             response.notification.request.content.data;
+
+//           console.log(
+//             "👉👉👉 NOTIFICATION CLICKED 👉👉👉"
+//           );
+
+//           console.log(
+//             "📌 CLICK DATA:",
+//             data
+//           );
+
+//           /**
+//            * Assigned / Pending Services
+//            */
+//           if (
+//             data?.screen === "pending-services" ||
+//             data?.screen === "assigned-services"
+//           ) {
+//             console.log(
+//               "➡️ Navigating to assigned-services"
+//             );
+
+//             router.push("/assigned-services");
+//           }
+
+//           /**
+//            * New Services
+//            */
+//           if (data?.screen === "new-services") {
+//             console.log(
+//               "➡️ Navigating to new-services"
+//             );
+
+//             router.push("/new-services");
+//           }
+//         }
+//       );
+
+//     /**
+//      * ========================================================
+//      * 🚀 COLD START
+//      * ========================================================
+//      *
+//      * Handles the case where the application was completely
+//      * closed and opened by tapping a notification.
+//      */
+//     Notifications.getLastNotificationResponseAsync()
+//       .then((response) => {
+//         if (!response) {
+//           console.log(
+//             "ℹ️ No previous notification response"
+//           );
+//           return;
+//         }
+
+//         const data =
+//           response.notification.request.content.data;
+
+//         console.log(
+//           "🚀🚀🚀 OPENED FROM NOTIFICATION 🚀🚀🚀"
+//         );
+
+//         console.log(
+//           "📌 COLD START DATA:",
+//           data
+//         );
+
+//         /**
+//          * Assigned / Pending Services
+//          */
+//         if (
+//           data?.screen === "pending-services" ||
+//           data?.screen === "assigned-services"
+//         ) {
+//           console.log(
+//             "➡️ Cold start → assigned-services"
+//           );
+
+//           router.push("/assigned-services");
+//         }
+
+//         /**
+//          * New Services
+//          */
+//         if (data?.screen === "new-services") {
+//           console.log(
+//             "➡️ Cold start → new-services"
+//           );
+
+//           router.push("/new-services");
+//         }
+//       })
+//       .catch((error) => {
+//         console.log(
+//           "❌ Error checking last notification response:",
+//           error
+//         );
+//       });
+
+//     /**
+//      * ========================================================
+//      * 🧹 CLEANUP
+//      * ========================================================
+//      */
+//     return () => {
+//       console.log(
+//         "🧹 Removing notification listeners..."
+//       );
+
+//       notificationSub.remove();
+//       responseSub.remove();
+//     };
+//   }, [router]);
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -459,20 +849,23 @@ import { Platform } from "react-native";
  * 🔔 NOTIFICATION HANDLER
  * ============================================================
  *
- * This controls how notifications are presented while the
- * application is in the foreground.
+ * Controls how notifications are presented while the app
+ * is in the foreground.
  */
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     console.log("🔥🔥🔥 HANDLER CALLED 🔥🔥🔥");
+
     console.log(
       "🔥 HANDLER TITLE:",
       notification.request.content.title
     );
+
     console.log(
       "🔥 HANDLER BODY:",
       notification.request.content.body
     );
+
     console.log(
       "🔥 HANDLER DATA:",
       notification.request.content.data
@@ -498,19 +891,38 @@ async function setupNotificationChannel() {
   }
 
   try {
-    console.log("🔔 Setting up Android notification channel...");
+    console.log(
+      "🔔 Setting up Android notification channel..."
+    );
 
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
-      sound: "default",
-      enableVibrate: true,
-      showBadge: true,
-    });
+    await Notifications.setNotificationChannelAsync(
+      "default",
+      {
+        name: "default",
 
-    console.log("✅ Android notification channel ready");
+        importance:
+          Notifications.AndroidImportance.MAX,
+
+        vibrationPattern: [
+          0,
+          250,
+          250,
+          250,
+        ],
+
+        lightColor: "#FF231F7C",
+
+        sound: "default",
+
+        enableVibrate: true,
+
+        showBadge: true,
+      }
+    );
+
+    console.log(
+      "✅ Android notification channel ready"
+    );
   } catch (error) {
     console.log(
       "❌ Error setting Android notification channel:",
@@ -520,7 +932,9 @@ async function setupNotificationChannel() {
 }
 
 /**
- * Initialize channel immediately.
+ * ============================================================
+ * 📢 INITIALIZE ANDROID CHANNEL
+ * ============================================================
  */
 if (Platform.OS === "android") {
   setupNotificationChannel();
@@ -534,20 +948,30 @@ if (Platform.OS === "android") {
 export async function registerForPushNotificationsAsync() {
   try {
     console.log("=================================");
-    console.log("🔔 PUSH NOTIFICATION REGISTRATION START");
+    console.log(
+      "🔔 PUSH NOTIFICATION REGISTRATION START"
+    );
     console.log("=================================");
 
+    /**
+     * Physical device check
+     */
     if (!Device.isDevice) {
       console.log(
         "❌ Must use a physical device for Push Notifications"
       );
+
       return null;
     }
 
     /**
-     * Check current permission
+     * ========================================================
+     * 🔐 CHECK NOTIFICATION PERMISSION
+     * ========================================================
      */
-    const { status: existingStatus } =
+    const {
+      status: existingStatus,
+    } =
       await Notifications.getPermissionsAsync();
 
     console.log(
@@ -561,9 +985,13 @@ export async function registerForPushNotificationsAsync() {
      * Request permission if necessary
      */
     if (existingStatus !== "granted") {
-      console.log("📌 Requesting notification permission...");
+      console.log(
+        "📌 Requesting notification permission..."
+      );
 
-      const { status } =
+      const {
+        status,
+      } =
         await Notifications.requestPermissionsAsync();
 
       finalStatus = status;
@@ -574,25 +1002,38 @@ export async function registerForPushNotificationsAsync() {
       );
     }
 
+    /**
+     * Permission denied
+     */
     if (finalStatus !== "granted") {
       console.log(
         "❌ Notification permission not granted!"
       );
+
       return null;
     }
 
-    console.log("✅ Notification permission granted");
+    console.log(
+      "✅ Notification permission granted"
+    );
 
     /**
-     * Expo EAS project ID
+     * ========================================================
+     * 🆔 EXPO EAS PROJECT ID
+     * ========================================================
      */
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId;
 
-    console.log("📌 Expo Project ID:", projectId);
+    console.log(
+      "📌 Expo Project ID:",
+      projectId
+    );
 
     /**
-     * Get Expo Push Token
+     * ========================================================
+     * 📲 GET EXPO PUSH TOKEN
+     * ========================================================
      */
     const token =
       (
@@ -609,7 +1050,7 @@ export async function registerForPushNotificationsAsync() {
     console.log("=================================");
 
     /**
-     * Make sure Android channel exists
+     * Make sure Android notification channel exists
      */
     await setupNotificationChannel();
 
@@ -626,6 +1067,85 @@ export async function registerForPushNotificationsAsync() {
 
 /**
  * ============================================================
+ * 🧪 LOCAL NOTIFICATION TEST
+ * ============================================================
+ *
+ * This does NOT use Firebase.
+ *
+ * It creates a notification directly on the Android device.
+ *
+ * Purpose:
+ * Confirm that:
+ *
+ * Expo Notifications
+ *        ↓
+ * Notification Handler
+ *        ↓
+ * Android Banner
+ *
+ * are working correctly.
+ */
+export async function testLocalNotification() {
+  try {
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "🧪 SENDING LOCAL TEST NOTIFICATION"
+    );
+
+    console.log(
+      "================================="
+    );
+
+    /**
+     * Make sure Android channel exists
+     */
+    await setupNotificationChannel();
+
+    /**
+     * Schedule notification immediately
+     */
+    const id =
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🔥 TEST NOTIFICATION",
+
+          body:
+            "Expo notification banner is working!",
+
+          data: {
+            screen: "test",
+          },
+
+          sound: "default",
+        },
+
+        /**
+         * null = trigger immediately
+         */
+        trigger: null,
+      });
+
+    console.log(
+      "🧪 LOCAL NOTIFICATION ID:",
+      id
+    );
+
+    return id;
+  } catch (error) {
+    console.log(
+      "❌ LOCAL NOTIFICATION ERROR:",
+      error
+    );
+
+    return null;
+  }
+}
+
+/**
+ * ============================================================
  * 🔔 NOTIFICATION LISTENER
  * ============================================================
  *
@@ -633,9 +1153,11 @@ export async function registerForPushNotificationsAsync() {
  *
  * 1. Foreground notification
  * 2. Notification click
- * 3. App opened from a notification
+ * 3. App opened from notification
  */
-export const useNotificationListener = (router: any) => {
+export const useNotificationListener = (
+  router: any
+) => {
   useEffect(() => {
     console.log(
       "🔥🔥🔥 NOTIFICATION LISTENER REGISTERED 🔥🔥🔥"
@@ -684,7 +1206,8 @@ export const useNotificationListener = (router: any) => {
       Notifications.addNotificationResponseReceivedListener(
         (response) => {
           const data =
-            response.notification.request.content.data;
+            response.notification.request.content
+              .data;
 
           console.log(
             "👉👉👉 NOTIFICATION CLICKED 👉👉👉"
@@ -699,25 +1222,34 @@ export const useNotificationListener = (router: any) => {
            * Assigned / Pending Services
            */
           if (
-            data?.screen === "pending-services" ||
-            data?.screen === "assigned-services"
+            data?.screen ===
+              "pending-services" ||
+            data?.screen ===
+              "assigned-services"
           ) {
             console.log(
               "➡️ Navigating to assigned-services"
             );
 
-            router.push("/assigned-services");
+            router.push(
+              "/assigned-services"
+            );
           }
 
           /**
            * New Services
            */
-          if (data?.screen === "new-services") {
+          if (
+            data?.screen ===
+            "new-services"
+          ) {
             console.log(
               "➡️ Navigating to new-services"
             );
 
-            router.push("/new-services");
+            router.push(
+              "/new-services"
+            );
           }
         }
       );
@@ -727,8 +1259,9 @@ export const useNotificationListener = (router: any) => {
      * 🚀 COLD START
      * ========================================================
      *
-     * Handles the case where the application was completely
-     * closed and opened by tapping a notification.
+     * Handles the case where the application was
+     * completely closed and opened by tapping a
+     * notification.
      */
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
@@ -736,11 +1269,13 @@ export const useNotificationListener = (router: any) => {
           console.log(
             "ℹ️ No previous notification response"
           );
+
           return;
         }
 
         const data =
-          response.notification.request.content.data;
+          response.notification.request.content
+            .data;
 
         console.log(
           "🚀🚀🚀 OPENED FROM NOTIFICATION 🚀🚀🚀"
@@ -755,25 +1290,34 @@ export const useNotificationListener = (router: any) => {
          * Assigned / Pending Services
          */
         if (
-          data?.screen === "pending-services" ||
-          data?.screen === "assigned-services"
+          data?.screen ===
+            "pending-services" ||
+          data?.screen ===
+            "assigned-services"
         ) {
           console.log(
             "➡️ Cold start → assigned-services"
           );
 
-          router.push("/assigned-services");
+          router.push(
+            "/assigned-services"
+          );
         }
 
         /**
          * New Services
          */
-        if (data?.screen === "new-services") {
+        if (
+          data?.screen ===
+          "new-services"
+        ) {
           console.log(
             "➡️ Cold start → new-services"
           );
 
-          router.push("/new-services");
+          router.push(
+            "/new-services"
+          );
         }
       })
       .catch((error) => {
@@ -794,6 +1338,7 @@ export const useNotificationListener = (router: any) => {
       );
 
       notificationSub.remove();
+
       responseSub.remove();
     };
   }, [router]);
