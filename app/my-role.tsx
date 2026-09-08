@@ -3703,7 +3703,7 @@
 //       setSlides(imageUrls);
 //     }
 //   };
-  
+
 //   /* ================= FETCH COUNTS ================= */
 //   const fetchCounts = async () => {
 //     const { data } = await supabase.auth.getUser();
@@ -11252,43 +11252,43 @@
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { Audio } from "expo-av";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
 import * as Location from "expo-location";
 import { router, useFocusEffect, usePathname } from "expo-router";
 import * as TaskManager from "expo-task-manager";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  AppState,
-  AppStateStatus,
-  BackHandler,
-  Dimensions,
-  FlatList,
-  Linking,
-  Modal,
-  PanResponder,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  Vibration,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    AppState,
+    AppStateStatus,
+    BackHandler,
+    Dimensions,
+    FlatList,
+    Linking,
+    Modal,
+    PanResponder,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    Vibration,
+    View,
 } from "react-native";
 import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LocationDisclosureModal from "../components/LocationDisclosureModal";
+import { authApi, partnerApi } from "../lib/api";
 import { scheduleDailyDutyReminders } from "../lib/dutyReminders";
 import { LOCATION_TASK_NAME } from "../lib/locationTask";
 import { turnOffDutyAndLogout } from "../lib/logout";
-import { authApi, partnerApi } from "../lib/api";
 import { registerForPushNotificationsAsync } from "./notifications";
-import Constants from "expo-constants";
 
 const { height, width } = Dimensions.get("window");
 const SLIDER_HEIGHT = height * 0.42;
@@ -11297,10 +11297,10 @@ const SLIDER_HEIGHT = height * 0.42;
 // TYPE DEFINITIONS
 // ============================================================
 interface HubSubLocation {
-  location_name: string;
-  pincode: string;
-  latitude?: number;
-  longitude?: number;
+    location_name: string;
+    pincode: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 // ============================================================
@@ -11310,1469 +11310,1468 @@ const PINCODE_GEOCODE_CACHE: Record<string, { latitude: number; longitude: numbe
 
 // Utility to extract pincode from location string
 const extractPincode = (text: string): string | null => {
-  if (!text) return null;
-  const match = text?.match(/\b\d{6}\b/);
-  return match ? match[0] : null;
+    if (!text) return null;
+    const match = text?.match(/\b\d{6}\b/);
+    return match ? match[0] : null;
 };
 
 // Helper function to geocode a pincode
 const geocodePincode = async (
-  pincode: string, 
-  locationName: string
+    pincode: string,
+    locationName: string
 ): Promise<HubSubLocation | null> => {
-  try {
-    // Check cache first
-    if (PINCODE_GEOCODE_CACHE[pincode]) {
-      console.log(`✅ Using cached coords for pincode ${pincode}`);
-      return {
-        location_name: locationName || `Area ${pincode}`,
-        pincode,
-        latitude: PINCODE_GEOCODE_CACHE[pincode].latitude,
-        longitude: PINCODE_GEOCODE_CACHE[pincode].longitude,
-      };
-    }
+    try {
+        // Check cache first
+        if (PINCODE_GEOCODE_CACHE[pincode]) {
+            console.log(`✅ Using cached coords for pincode ${pincode}`);
+            return {
+                location_name: locationName || `Area ${pincode}`,
+                pincode,
+                latitude: PINCODE_GEOCODE_CACHE[pincode].latitude,
+                longitude: PINCODE_GEOCODE_CACHE[pincode].longitude,
+            };
+        }
 
-    // Try multiple geocoding strategies in sequence
-    
-    // Strategy 1: Direct pincode + country
-    let searchAddress = `${pincode}, India`;
-    console.log(`🔍 Geocoding: ${searchAddress}`);
-    
-    let geocoded = await Location.geocodeAsync(searchAddress);
-    
-    // Strategy 2: With location name if available
-    if ((!geocoded || geocoded.length === 0) && locationName) {
-      searchAddress = `${locationName}, ${pincode}, India`;
-      console.log(`🔍 Geocoding: ${searchAddress}`);
-      geocoded = await Location.geocodeAsync(searchAddress);
-    }
-    
-    // Strategy 3: Without country code
-    if (!geocoded || geocoded.length === 0) {
-      searchAddress = `${pincode}`;
-      console.log(`🔍 Geocoding: ${searchAddress}`);
-      geocoded = await Location.geocodeAsync(searchAddress);
-    }
+        // Try multiple geocoding strategies in sequence
 
-    if (geocoded && geocoded.length > 0 && geocoded[0]) {
-      const { latitude, longitude } = geocoded[0];
-      
-      // Validate coordinates
-      if (typeof latitude === 'number' && !isNaN(latitude) && 
-          typeof longitude === 'number' && !isNaN(longitude) &&
-          latitude >= -90 && latitude <= 90 &&
-          longitude >= -180 && longitude <= 180) {
-        
-        // Cache the result
-        PINCODE_GEOCODE_CACHE[pincode] = { latitude, longitude };
-        
-        console.log(`✅ Geocoded pincode ${pincode}:`, latitude, longitude);
-        
-        return {
-          location_name: locationName || `Area ${pincode}`,
-          pincode,
-          latitude: Number(latitude.toFixed(6)),
-          longitude: Number(longitude.toFixed(6)),
-        };
-      }
+        // Strategy 1: Direct pincode + country
+        let searchAddress = `${pincode}, India`;
+        console.log(`🔍 Geocoding: ${searchAddress}`);
+
+        let geocoded = await Location.geocodeAsync(searchAddress);
+
+        // Strategy 2: With location name if available
+        if ((!geocoded || geocoded.length === 0) && locationName) {
+            searchAddress = `${locationName}, ${pincode}, India`;
+            console.log(`🔍 Geocoding: ${searchAddress}`);
+            geocoded = await Location.geocodeAsync(searchAddress);
+        }
+
+        // Strategy 3: Without country code
+        if (!geocoded || geocoded.length === 0) {
+            searchAddress = `${pincode}`;
+            console.log(`🔍 Geocoding: ${searchAddress}`);
+            geocoded = await Location.geocodeAsync(searchAddress);
+        }
+
+        if (geocoded && geocoded.length > 0 && geocoded[0]) {
+            const { latitude, longitude } = geocoded[0];
+
+            // Validate coordinates
+            if (typeof latitude === 'number' && !isNaN(latitude) &&
+                typeof longitude === 'number' && !isNaN(longitude) &&
+                latitude >= -90 && latitude <= 90 &&
+                longitude >= -180 && longitude <= 180) {
+
+                // Cache the result
+                PINCODE_GEOCODE_CACHE[pincode] = { latitude, longitude };
+
+                console.log(`✅ Geocoded pincode ${pincode}:`, latitude, longitude);
+
+                return {
+                    location_name: locationName || `Area ${pincode}`,
+                    pincode,
+                    latitude: Number(latitude.toFixed(6)),
+                    longitude: Number(longitude.toFixed(6)),
+                };
+            }
+        }
+
+        console.warn(`❌ Failed to geocode pincode ${pincode}`);
+        return null;
+
+    } catch (error) {
+        console.error(`❌ Error geocoding pincode ${pincode}:`, error);
+        return null;
     }
-
-    console.warn(`❌ Failed to geocode pincode ${pincode}`);
-    return null;
-
-  } catch (error) {
-    console.error(`❌ Error geocoding pincode ${pincode}:`, error);
-    return null;
-  }
 };
 
 export default function MyRoleScreen() {
-  const pathname = usePathname();
-
-  const [newCount, setNewCount] = useState(0);
-  const [assignedCount, setAssignedCount] = useState(0);
-  const [completedCount, setCompletedCount] = useState(0);
-  const [cancelledCount, setCancelledCount] = useState(0);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [slides, setSlides] = useState<string[]>([]);
-  const [isAvailable, setIsAvailable] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [dutyModalVisible, setDutyModalVisible] = useState(false);
-  const [customerCareModalVisible, setCustomerCareModalVisible] = useState(false);
-  const [targetDutyValue, setTargetDutyValue] = useState<boolean | null>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationDisclosureVisible, setLocationDisclosureVisible] = useState(false);
-  const [outOfBoundsModalVisible, setOutOfBoundsModalVisible] = useState(false);
-  const [todayDutyMinutes, setTodayDutyMinutes] = useState(0);
-  const [weeklyDutyMinutes, setWeeklyDutyMinutes] = useState(0);
-  const [monthlyDutyMinutes, setMonthlyDutyMinutes] = useState(0);
-  const [dutyStartedAt, setDutyStartedAt] = useState<string | null>(null);
-  const [dutyLogsJson, setDutyLogsJson] = useState<Record<string, number>>({});
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [loadingLogout, setLoadingLogout] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
-
-  const dbTodayMinsRef = useRef<number>(0);
-  const dbWeeklyMinsRef = useRef<number>(0);
-  const dbMonthlyMinsRef = useRef<number>(0);
-
-  /* AUDIO & VIBRATION ALERT FOR OUT OF BOUNDS */
-  const playAlertSound = async () => {
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        staysActiveInBackground: false,
-      });
-
-      const { sound } = await Audio.Sound.createAsync(
-        require("../assets/images/zone_alert.wav")
-      );
-
-      let playCount = 0;
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish && !status.isLooping) {
-          playCount += 1;
-          if (playCount < 2) {
-            sound.replayAsync();
-          } else {
-            sound.unloadAsync();
-          }
-        }
-      });
-
-      await sound.playAsync();
-      Vibration.vibrate([0, 400, 150, 400, 150, 400]);
-    } catch (error) {
-      console.log("❌ Alert sound error:", error);
-    }
-  };
-
-  const triggerOutOfBoundsPopUp = () => {
-    setOutOfBoundsModalVisible(true);
-    playAlertSound();
-  };
-
-  const hasAlertedOutOfBoundsRef = useRef(false);
-
-  /* ZONE MAP & GEOFENCING STATES */
-  const [zoneModalVisible, setZoneModalVisible] = useState(false);
-  const [isOutOfZone, setIsOutOfZone] = useState(false);
-  const [assignedHubName, setAssignedHubName] = useState<string>("Assigned Zone");
-  const [assignedLocationsStr, setAssignedLocationsStr] = useState<string>("");
-  const [assignedHubCoords, setAssignedHubCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [assignedPincodes, setAssignedPincodes] = useState<string[]>([]);
-  const [currentCoords, setCurrentCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [currentAreaName, setCurrentAreaName] = useState<string>("");
-  const [selectedPincodeInfo, setSelectedPincodeInfo] = useState<string | null>(null);
-  const [hubSubLocations, setHubSubLocations] = useState<HubSubLocation[]>([]);
-  const isZoneDataLoadedRef = useRef(false);
-
-  /* ================= FETCH ASSIGNED ZONE & HUB ================= */
-  const fetchAssignedHubZone = async () => {
-    try {
-      const response = (await partnerApi.assignedZone()) as any;
-      
-      console.log("🗺️ ASSIGNED ZONE RESPONSE:", JSON.stringify(response, null, 2));
-
-      let zoneData = null;
-      if (response?.data?.hub_name) {
-        zoneData = response.data;
-      } else if (response?.data?.data?.hub_name) {
-        zoneData = response.data.data;
-      } else if (response?.hub_name) {
-        zoneData = response;
-      }
-
-      if (!zoneData?.hub_name) {
-        console.error("❌ Invalid assigned zone response:", response);
-        setHubSubLocations([]);
-        setAssignedPincodes([]);
-        return;
-      }
-
-      const hubName = String(zoneData.hub_name).trim();
-      setAssignedHubName(hubName);
-      setAssignedLocationsStr(String(zoneData.location || "").trim());
-
-      const subLocs: HubSubLocation[] = [];
-      const subLocations = zoneData.sub_locations || [];
-
-      if (subLocations.length === 0) {
-        console.warn("⚠️ No sub-locations found in response");
-        
-        const extractedPincodes = (zoneData.location || "")
-          .match(/\b\d{6}\b/g) || [];
-        
-        if (extractedPincodes.length > 0) {
-          console.log(`📮 Extracted ${extractedPincodes.length} pincodes from location string`);
-          
-          for (const pincode of extractedPincodes) {
-            const subLoc = await geocodePincode(pincode, hubName);
-            if (subLoc) {
-              subLocs.push(subLoc);
-            }
-          }
-        }
-      } else {
-        console.log(`📌 Processing ${subLocations.length} sub-locations...`);
-        
-        for (const sub of subLocations) {
-          const locationName = String(sub.location_name || "").trim();
-          let pincode = String(sub.pincode || "").trim();
-
-          if (!pincode) {
-            const extracted = extractPincode(locationName);
-            if (extracted) {
-              pincode = extracted;
-            }
-          }
-
-          if (!pincode) {
-            console.warn(`⚠️ No pincode found for: ${locationName}`);
-            continue;
-          }
-
-          const subLoc = await geocodePincode(pincode, locationName);
-          if (subLoc) {
-            subLocs.push(subLoc);
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-
-      console.log(`✅ Processed ${subLocs.length} sub-locations with coordinates`);
-
-      setHubSubLocations(subLocs);
-      setAssignedPincodes(subLocs.map((item) => item.pincode).filter(Boolean));
-
-      const validCoordinates = subLocs.filter(
-        (item) =>
-          typeof item.latitude === "number" &&
-          !isNaN(item.latitude) &&
-          Number.isFinite(item.latitude) &&
-          typeof item.longitude === "number" &&
-          !isNaN(item.longitude) &&
-          Number.isFinite(item.longitude)
-      );
-
-      console.log(`📍 Valid coordinate count: ${validCoordinates.length}`);
-
-      if (validCoordinates.length > 0) {
-        const avgLat = validCoordinates.reduce((sum, item) => sum + item.latitude!, 0) / validCoordinates.length;
-        const avgLng = validCoordinates.reduce((sum, item) => sum + item.longitude!, 0) / validCoordinates.length;
-        
-        setAssignedHubCoords({
-          latitude: avgLat,
-          longitude: avgLng,
-        });
-
-        console.log("📍 ASSIGNED HUB CENTER:", avgLat, avgLng);
-      } else {
-        console.error("❌ No valid coordinates found for any location");
-        setAssignedHubCoords(null);
-      }
-
-      isZoneDataLoadedRef.current = true;
-      console.log("✅ Zone data loaded successfully");
-
-    } catch (error) {
-      console.error("❌ Error fetching assigned hub zone:", error);
-      setHubSubLocations([]);
-      setAssignedPincodes([]);
-      setAssignedHubCoords(null);
-      isZoneDataLoadedRef.current = true;
-    }
-  };
-
-  // ================= ZONE MAP REF =================
-  const zoneMapRef = useRef<MapView | null>(null);
-
-  // ================= FIT MAP TO ASSIGNED ZONE + LIVE LOCATION =================
-  useEffect(() => {
-    if (!zoneModalVisible) return;
-    if (hubSubLocations.length === 0) {
-      console.log("📍 No sub-locations to show on map");
-      return;
-    }
-
-    const zonePoints = hubSubLocations
-      .filter(
-        (item) =>
-          typeof item.latitude === "number" &&
-          Number.isFinite(item.latitude) &&
-          typeof item.longitude === "number" &&
-          Number.isFinite(item.longitude)
-      )
-      .map((item) => ({
-        latitude: item.latitude!,
-        longitude: item.longitude!,
-      }));
-
-    if (zonePoints.length === 0) {
-      console.log("📍 No valid zone points found");
-      return;
-    }
-
-    const allPoints = currentCoords 
-      ? [currentCoords, ...zonePoints]
-      : zonePoints;
-
-    console.log(`📍 Fitting map with ${allPoints.length} points`);
-
-    setTimeout(() => {
-      zoneMapRef.current?.fitToCoordinates(
-        allPoints,
-        {
-          edgePadding: {
-            top: 140,
-            right: 40,
-            bottom: 300,
-            left: 40,
-          },
-          animated: true,
-        }
-      );
-    }, 500);
-
-  }, [zoneModalVisible, currentCoords, hubSubLocations]);
-
-  /* DRAGGABLE PAN RESPONDER FOR FLOATING BUTTON */
-  const pan = useRef(new Animated.ValueXY()).current;
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
-      },
-      onPanResponderGrant: () => {
-        pan.setOffset({
-          x: (pan.x as any)._value || 0,
-          y: (pan.y as any)._value || 0,
-        });
-        pan.setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-    })
-  ).current;
-
-  /* HAVERSINE DISTANCE */
-  const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  /* GENERATES CONVEX HULL */
-  const getConvexHullCoordinates = (points: Array<{ latitude: number; longitude: number }>) => {
-    if (!points || points.length < 3) return [];
-    const validPoints = points.filter(
-      (p) =>
-        p &&
-        typeof p.latitude === "number" &&
-        Number.isFinite(p.latitude) &&
-        typeof p.longitude === "number" &&
-        Number.isFinite(p.longitude)
-    );
-    if (validPoints.length < 3) return [];
-
-    const sorted = [...validPoints].sort((a, b) =>
-      a.longitude === b.longitude ? a.latitude - b.latitude : a.longitude - b.longitude
-    );
-
-    const cross = (o: any, a: any, b: any) =>
-      (a.longitude - o.longitude) * (b.latitude - o.latitude) -
-      (a.latitude - o.latitude) * (b.longitude - o.longitude);
-
-    const lower: any[] = [];
-    for (const p of sorted) {
-      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
-        lower.pop();
-      }
-      lower.push(p);
-    }
-
-    const upper: any[] = [];
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      const p = sorted[i];
-      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
-        upper.pop();
-      }
-      upper.push(p);
-    }
-
-    lower.pop();
-    upper.pop();
-    return lower.concat(upper);
-  };
-
-  /* GENERATES ORGANIC BOUNDARY POLYGON */
-  const generatePincodeBoundaryPoints = (lat: number, lng: number, radiusKm: number = 1.3) => {
-    if (
-      typeof lat !== "number" ||
-      !Number.isFinite(lat) ||
-      typeof lng !== "number" ||
-      !Number.isFinite(lng)
-    )
-      return [];
-    const cosLat = Math.cos((lat * Math.PI) / 180);
-    if (Math.abs(cosLat) < 0.0001) return [];
-
-    const points: Array<{ latitude: number; longitude: number }> = [];
-    const numPoints = 12;
-    const seed = (Math.abs(lat * 1000) + Math.abs(lng * 1000)) % 10;
-    for (let i = 0; i < numPoints; i++) {
-      const angle = (i * 2 * Math.PI) / numPoints;
-      const varRadius = radiusKm * (0.85 + 0.3 * Math.sin(angle * 3 + seed));
-      const latOffset = (varRadius / 111) * Math.cos(angle);
-      const lngOffset = (varRadius / (111 * cosLat)) * Math.sin(angle);
-      const ptLat = lat + latOffset;
-      const ptLng = lng + lngOffset;
-      if (
-        typeof ptLat === "number" &&
-        Number.isFinite(ptLat) &&
-        typeof ptLng === "number" &&
-        Number.isFinite(ptLng)
-      ) {
-        points.push({
-          latitude: ptLat,
-          longitude: ptLng,
-        });
-      }
-    }
-    return points;
-  };
-
-  /* ================= CHECK ZONE BOUNDARY ================= */
-  const checkZoneBoundary = async (lat: number, lng: number) => {
-    setCurrentCoords({ latitude: lat, longitude: lng });
-
-    if (!isZoneDataLoadedRef.current && hubSubLocations.length === 0) {
-      console.log("⏳ Zone data loading in progress. Postponing boundary evaluation.");
-      return false;
-    }
-
-    let isInside = false;
-    let currentAreaStr = "";
-
-    if (assignedHubCoords) {
-      const distToHubKm = getDistanceFromLatLonInKm(
-        lat,
-        lng,
-        assignedHubCoords.latitude,
-        assignedHubCoords.longitude
-      );
-      if (distToHubKm <= 4.5) {
-        isInside = true;
-      }
-    }
-
-    if (!isInside && hubSubLocations && hubSubLocations.length > 0) {
-      for (const sub of hubSubLocations) {
-        if (sub.latitude && sub.longitude) {
-          const distToSubKm = getDistanceFromLatLonInKm(lat, lng, sub.latitude, sub.longitude);
-          if (distToSubKm <= 3.5) {
-            isInside = true;
-            break;
-          }
-        }
-      }
-    }
-
-    try {
-      const reversed = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-      if (reversed && reversed.length > 0) {
-        const place = reversed[0];
-        const postalCode = String(place.postalCode || "").trim();
-        const namePart = (place.name || place.street || "").trim();
-        const subregionPart = (place.subregion || place.district || place.city || "").trim();
-        currentAreaStr = `${namePart ? namePart + ", " : ""}${subregionPart}${
-          postalCode ? " (" + postalCode + ")" : ""
-        }`;
-        setCurrentAreaName(currentAreaStr);
-
-        if (!isInside && postalCode) {
-          const allPincodes = [
-            ...assignedPincodes,
-            ...hubSubLocations.map((s) => s.pincode).filter(Boolean),
-            ...(assignedLocationsStr.match(/\b\d{6}\b/g) || []),
-          ];
-
-          if (allPincodes.some((pin) => pin && postalCode.includes(pin.trim()))) {
-            isInside = true;
-          }
-        }
-      }
-    } catch (e) {
-      console.log("Reverse geocode error:", e);
-    }
-
-    const outOfBounds = !isInside;
-    setIsOutOfZone(outOfBounds);
-
-    if (!outOfBounds) {
-      hasAlertedOutOfBoundsRef.current = false;
-      setOutOfBoundsModalVisible(false);
-    } else {
-      if (!hasAlertedOutOfBoundsRef.current) {
-        hasAlertedOutOfBoundsRef.current = true;
-        setOutOfBoundsModalVisible(true);
-        triggerOutOfBoundsPopUp();
-      }
-    }
-
-    try {
-      await partnerApi.updateLocation(lat, lng, outOfBounds);
-    } catch (error: any) {
-      // Don't log 401 errors for location updates
-      if (error?.message?.includes('401') || error?.status === 401) {
-        console.log('⚠️ Token expired, skipping location update');
-      } else {
-        console.log("❌ Backend location update error:", error);
-      }
-    }
-
-    return outOfBounds;
-  };
-
-  const handleNavigateToZone = () => {
-    if (assignedHubCoords) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${assignedHubCoords.latitude},${assignedHubCoords.longitude}`;
-      Linking.openURL(url);
-    } else {
-      const query = encodeURIComponent(assignedHubName);
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
-    }
-  };
-
-  const formatMinutesToHours = (totalMinutes: number | string) => {
-    const minsNum = Math.max(0, parseInt(String(totalMinutes || 0), 10) || 0);
-    if (minsNum === 0) return "0 min";
-    const hours = Math.floor(minsNum / 60);
-    const mins = minsNum % 60;
-
-    if (hours > 0 && mins > 0) {
-      return `${hours}h ${mins} min`;
-    } else if (hours > 0) {
-      return `${hours}h`;
-    } else {
-      return `${mins} min`;
-    }
-  };
-
-  const calculateDutyTotals = (
-    logs: Record<string, number> = {},
-    active: boolean = false,
-    startedAt: string | null = null
-  ) => {
-    const todayKey = dayjs().format("YYYY-MM-DD");
-    const currentMonthKey = dayjs().format("YYYY-MM");
-
-    const now = dayjs();
-    const dayOfWeek = now.day();
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = now.subtract(diffToMonday, "day").startOf("day");
-    const endOfWeek = startOfWeek.add(6, "day").endOf("day");
-
-    let todayBase = Number(logs[todayKey] || 0);
-    let weeklyBase = 0;
-    let monthlyBase = 0;
-
-    Object.entries(logs).forEach(([dateStr, mins]) => {
-      const minVal = Number(mins) || 0;
-      const d = dayjs(dateStr);
-
-      if (d.isValid()) {
-        if (
-          (d.isSame(startOfWeek, "day") || d.isAfter(startOfWeek)) &&
-          (d.isSame(endOfWeek, "day") || d.isBefore(endOfWeek))
-        ) {
-          weeklyBase += minVal;
-        }
-        if (dateStr.startsWith(currentMonthKey)) {
-          monthlyBase += minVal;
-        }
-      }
-    });
-
-    let activeSessionMins = 0;
-    let todayActiveMins = 0;
-    let weeklyActiveMins = 0;
-    let monthlyActiveMins = 0;
-
-    if (active && startedAt) {
-      const start = dayjs(startedAt);
-      if (start.isValid() && now.isAfter(start)) {
-        activeSessionMins = Math.max(0, now.diff(start, "minute"));
-
-        const startOfToday = now.startOf("day");
-        const effectiveTodayStart = start.isAfter(startOfToday) ? start : startOfToday;
-        todayActiveMins = Math.max(0, now.diff(effectiveTodayStart, "minute"));
-
-        const effectiveWeeklyStart = start.isAfter(startOfWeek) ? start : startOfWeek;
-        weeklyActiveMins = Math.max(0, now.diff(effectiveWeeklyStart, "minute"));
-
-        const startOfMonth = now.startOf("month");
-        const effectiveMonthlyStart = start.isAfter(startOfMonth) ? start : startOfMonth;
-        monthlyActiveMins = Math.max(0, now.diff(effectiveMonthlyStart, "minute"));
-      }
-    }
-
-    const maxTodayMinutes = Math.max(0, now.diff(now.startOf("day"), "minute"));
-    const rawToday = todayBase + todayActiveMins;
-
-    return {
-      today: Math.min(rawToday, maxTodayMinutes),
-      weekly: weeklyBase + weeklyActiveMins,
-      monthly: monthlyBase + monthlyActiveMins,
-    };
-  };
-
-  const sliderRef = useRef<FlatList>(null);
-  const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
-  const liveLocationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  /* ================= LIVE LOCATION TRACKING ================= */
-  const startLiveLocationTracking = async (userId: string) => {
-    await stopLiveLocationTracking();
-
-    // Check if running in Expo Go - background location has limitations
-    const isExpoGo = Constants?.expoConfig?.name === 'Expo Go';
-    if (isExpoGo) {
-      console.log('⚠️ Running in Expo Go - background location has limited support');
-    }
-
-    let { status: fgStatus } = await Location.getForegroundPermissionsAsync();
-    if (fgStatus !== "granted") {
-      const { status: reqStatus } = await Location.requestForegroundPermissionsAsync();
-      fgStatus = reqStatus;
-    }
-
-    if (fgStatus !== "granted") {
-      console.log("⚠️ Location permission not granted for live tracking.");
-      return;
-    }
-
-    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
-      .then(async (pos) => {
-        if (pos?.coords) {
-          try {
-            await partnerApi.updateLocation(pos.coords.latitude, pos.coords.longitude);
-            await checkZoneBoundary(pos.coords.latitude, pos.coords.longitude);
-          } catch (err: any) {
-            if (err?.message?.includes('401') || err?.status === 401) {
-              console.log('⚠️ Token expired, skipping initial location update');
-            } else {
-              console.log("Initial location update error:", err);
-            }
-          }
-        }
-      })
-      .catch((err) => console.log("Initial live location error:", err));
-
-    try {
-      const sub = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 4000,
-          distanceInterval: 5,
-        },
-        async (pos) => {
-          if (pos?.coords) {
-            try {
-              await partnerApi.updateLocation(pos.coords.latitude, pos.coords.longitude);
-              checkZoneBoundary(pos.coords.latitude, pos.coords.longitude);
-            } catch (err: any) {
-              if (err?.message?.includes('401') || err?.status === 401) {
-                console.log('⚠️ Token expired during location update, skipping');
-              } else {
-                console.log("❌ Watch location update error:", err);
-              }
-            }
-          }
-        }
-      );
-      locationSubscriptionRef.current = sub;
-    } catch (err) {
-      console.log("Error starting watchPositionAsync:", err);
-    }
-
-    // Only start background location if not in Expo Go
-    if (!isExpoGo) {
-      try {
-        const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-        if (bgStatus === "granted") {
-          const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
-          if (!isRegistered) {
-            await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-              accuracy: Location.Accuracy.High,
-              timeInterval: 1000,
-              distanceInterval: 1,
-              showsBackgroundLocationIndicator: true,
-              foregroundService: {
-                notificationTitle: "Neatify Partner Active 📍",
-                notificationBody: "Live location tracking active while on-duty.",
-                notificationColor: "#FFD700",
-              },
+    const pathname = usePathname();
+
+    const [newCount, setNewCount] = useState(0);
+    const [assignedCount, setAssignedCount] = useState(0);
+    const [completedCount, setCompletedCount] = useState(0);
+    const [cancelledCount, setCancelledCount] = useState(0);
+    const [activeSlide, setActiveSlide] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [slides, setSlides] = useState<string[]>([]);
+    const [isAvailable, setIsAvailable] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [dutyModalVisible, setDutyModalVisible] = useState(false);
+    const [customerCareModalVisible, setCustomerCareModalVisible] = useState(false);
+    const [targetDutyValue, setTargetDutyValue] = useState<boolean | null>(null);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [locationDisclosureVisible, setLocationDisclosureVisible] = useState(false);
+    const [outOfBoundsModalVisible, setOutOfBoundsModalVisible] = useState(false);
+    const [todayDutyMinutes, setTodayDutyMinutes] = useState(0);
+    const [weeklyDutyMinutes, setWeeklyDutyMinutes] = useState(0);
+    const [monthlyDutyMinutes, setMonthlyDutyMinutes] = useState(0);
+    const [dutyStartedAt, setDutyStartedAt] = useState<string | null>(null);
+    const [dutyLogsJson, setDutyLogsJson] = useState<Record<string, number>>({});
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [loadingLogout, setLoadingLogout] = useState(false);
+    const [appState, setAppState] = useState(AppState.currentState);
+
+    const dbTodayMinsRef = useRef<number>(0);
+    const dbWeeklyMinsRef = useRef<number>(0);
+    const dbMonthlyMinsRef = useRef<number>(0);
+
+    /* AUDIO & VIBRATION ALERT FOR OUT OF BOUNDS */
+    const playAlertSound = async () => {
+        try {
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+                playsInSilentModeIOS: true,
+                shouldDuckAndroid: true,
+                staysActiveInBackground: false,
             });
-            console.log("✅ Rapido-style background location tracking active");
-          }
-        }
-      } catch (err) {
-        console.log("Notice on background service:", err);
-      }
-    }
-  };
 
-  const stopLiveLocationTracking = async () => {
-    console.log('🛑 Stopping location tracking...');
-    
-    if (liveLocationIntervalRef.current) {
-      clearInterval(liveLocationIntervalRef.current);
-      liveLocationIntervalRef.current = null;
-    }
-    
-    if (locationSubscriptionRef.current) {
-      locationSubscriptionRef.current.remove();
-      locationSubscriptionRef.current = null;
-    }
-    
-    try {
-      const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
-      if (isRegistered) {
-        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-        console.log('🛑 Background location task stopped');
-      }
-    } catch (err) {
-      console.log('Error stopping background task:', err);
-    }
-
-    try {
-      await partnerApi.clearLocation();
-    } catch (error: any) {
-      if (error?.message?.includes('401') || error?.status === 401) {
-        console.log('⚠️ Token expired, skipping location clear');
-      } else {
-        console.log("❌ Error clearing partner location:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      stopLiveLocationTracking();
-    };
-  }, []);
-
-  /* ================= APP STATE LISTENER - REFRESH TOKEN ON FOCUS ================= */
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      // When app comes to foreground
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('🔄 App came to foreground, checking session...');
-        try {
-          // Check if token is still valid
-          await authApi.me();
-          console.log('✅ Session valid');
-        } catch (error: any) {
-          if (error?.message?.includes('401') || error?.status === 401) {
-            console.log('🔄 Token expired, trying to refresh...');
-            try {
-              // Try to refresh token
-              const refreshResponse = await authApi.refreshToken();
-              if (refreshResponse?.access_token) {
-                console.log('✅ Token refreshed');
-              }
-            } catch (refreshError) {
-              console.log('❌ Token refresh failed, redirecting to login...');
-              router.replace('/login');
-            }
-          }
-        }
-      }
-      setAppState(nextAppState);
-    });
-
-    return () => subscription.remove();
-  }, [appState]);
-
-  /* ================= BACK HANDLER ================= */
-  useFocusEffect(
-    useCallback(() => {
-      const backAction = () => {
-        if (router.canGoBack()) {
-          router.back();
-          return true;
-        }
-        return false;
-      };
-
-      const sub = BackHandler.addEventListener("hardwareBackPress", backAction);
-
-      return () => sub.remove();
-    }, [])
-  );
-
-  /* ================= Notifications load ================= */
-  const loadNotifications = async () => {
-    try {
-      const data = await partnerApi.notifications();
-      setNotifications(data);
-    } catch (error) {
-      console.error("❌ Failed to load notifications:", error);
-      setNotifications([]);
-    }
-  };
-
-  /* ================= FETCH SLIDES ================= */
-  const fetchSlides = async () => {
-    try {
-      const data = await partnerApi.heroImages();
-      const images = Array.isArray(data) ? data : data?.images || [];
-      const imageUrls = images.map((item: any) => item.image_url).filter(Boolean);
-      setSlides(imageUrls);
-    } catch (error: any) {
-      if (error?.message?.includes('401') || error?.status === 401) {
-        console.log('⚠️ Token expired, skipping hero images fetch');
-      } else {
-        console.error("❌ Failed to fetch hero images:", error);
-      }
-      setSlides([]);
-    }
-  };
-
-  /* ================= FETCH AVAILABILITY / DASHBOARD ================= */
-  const fetchAvailability = async () => {
-    try {
-      console.log("🔄 Fetching partner dashboard from FastAPI...");
-
-      const dashboard = await partnerApi.dashboard();
-
-      console.log("✅ Partner dashboard received:", JSON.stringify(dashboard, null, 2));
-
-      if (!dashboard) {
-        console.log("⚠️ Dashboard response is empty.");
-        return;
-      }
-
-      const duty = dashboard.duty;
-
-      if (duty) {
-        const active = Boolean(duty.is_available);
-
-        setIsAvailable(active);
-        setTodayDutyMinutes(Number(duty.today_minutes || 0));
-        setWeeklyDutyMinutes(Number(duty.weekly_minutes || 0));
-        setMonthlyDutyMinutes(Number(duty.monthly_minutes || 0));
-
-        console.log("🟢 Duty status:", active);
-        console.log("⏱️ Duty minutes:", {
-          today: duty.today_minutes,
-          weekly: duty.weekly_minutes,
-          monthly: duty.monthly_minutes,
-        });
-      }
-
-      const bookings = dashboard.bookings;
-
-      if (bookings) {
-        setNewCount(Number(bookings.new || 0));
-        setAssignedCount(Number(bookings.assigned || 0));
-        setCompletedCount(Number(bookings.completed || 0));
-        setCancelledCount(Number(bookings.cancelled || 0));
-
-        console.log("📊 Booking counts:", bookings);
-      }
-
-      if (duty?.is_available) {
-        hasAlertedOutOfBoundsRef.current = false;
-
-        await fetchAssignedHubZone();
-
-        if (!locationSubscriptionRef.current) {
-          try {
-            const currentUser = await authApi.me();
-            await startLiveLocationTracking(currentUser.id);
-          } catch (error) {
-            console.error("❌ Failed to start live tracking:", error);
-          }
-        }
-      } else {
-        hasAlertedOutOfBoundsRef.current = false;
-        setOutOfBoundsModalVisible(false);
-        setIsOutOfZone(false);
-        await stopLiveLocationTracking();
-      }
-    } catch (error: any) {
-      if (error?.message?.includes('401') || error?.status === 401) {
-        console.log('⚠️ Token expired during dashboard fetch');
-        // Try to refresh token
-        try {
-          await authApi.refreshToken();
-          // Retry dashboard fetch
-          await fetchAvailability();
-        } catch (refreshError) {
-          console.log('❌ Token refresh failed, redirecting to login...');
-          router.replace('/login');
-        }
-      } else {
-        console.error("❌ Failed to fetch partner dashboard:", error);
-        Alert.alert(
-          "Dashboard Error",
-          error instanceof Error ? error.message : "Unable to load partner dashboard."
-        );
-      }
-    }
-  };
-
-  /* ================= PROCEED WITH DUTY ACTIVATION ================= */
-  const proceedWithDutyActivation = async () => {
-    const hasGps = await Location.hasServicesEnabledAsync();
-
-    if (!hasGps) {
-      Alert.alert(
-        "Location Services Disabled 🛰️",
-        "Mobile GPS/Location service is turned OFF. Please turn ON Location in your phone settings to go ON-DUTY.",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Open Settings",
-            onPress: () => Linking.openSettings(),
-          },
-        ]
-      );
-      return;
-    }
-
-    setLocationLoading(true);
-
-    let initialLocStr = "";
-    let isOut = false;
-
-    try {
-      const initialPos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      initialLocStr = `${initialPos.coords.latitude}, ${initialPos.coords.longitude}`;
-
-      console.log("📍 Initial location:", initialLocStr);
-
-      await fetchAssignedHubZone();
-
-      isOut = await checkZoneBoundary(initialPos.coords.latitude, initialPos.coords.longitude);
-    } catch (error) {
-      console.log("❌ Error getting initial location:", error);
-    } finally {
-      setLocationLoading(false);
-    }
-
-    try {
-      console.log("🟢 Calling FastAPI duty ON...");
-
-      const response = await partnerApi.turnOnDuty(initialLocStr);
-
-      console.log("✅ FastAPI duty ON successful:", JSON.stringify(response, null, 2));
-
-      setIsAvailable(true);
-      setIsOutOfZone(isOut);
-
-      const nowStr = new Date().toISOString();
-      setDutyStartedAt(nowStr);
-
-      // Auto-open zone map when duty starts
-      await fetchAssignedHubZone();
-      setZoneModalVisible(true);
-
-      try {
-        const currentUser = await authApi.me();
-        await startLiveLocationTracking(currentUser.id);
-      } catch (error) {
-        console.error("❌ Failed to start live tracking:", error);
-      }
-
-      await fetchAvailability();
-
-      if (isOut) {
-        triggerOutOfBoundsPopUp();
-      }
-    } catch (error) {
-      console.error("❌ FastAPI duty ON failed:", error);
-      setIsAvailable(false);
-      Alert.alert(
-        "Unable to Go ON-DUTY",
-        error instanceof Error ? error.message : "FastAPI could not update your duty status."
-      );
-    }
-  };
-
-  /* ================= HANDLE LOCATION DISCLOSURE CONTINUE ================= */
-  const handleLocationDisclosureContinue = async () => {
-    setLocationDisclosureVisible(false);
-
-    const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-
-    if (fgStatus !== "granted") {
-      Alert.alert(
-        "Location Permission Required 📍",
-        "Permission to access location was denied. Please grant location access in your device settings to go ON-DUTY.",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Open Settings",
-            onPress: () => Linking.openSettings(),
-          },
-        ]
-      );
-      return;
-    }
-
-    const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-
-    if (bgStatus !== "granted") {
-      Alert.alert(
-        "Background Location Permission Required 📍",
-        "Background location permission is required so Neatify can assign jobs and track duty status while on duty.",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Open Settings",
-            onPress: () => Linking.openSettings(),
-          },
-        ]
-      );
-      return;
-    }
-
-    await proceedWithDutyActivation();
-  };
-
-  const handleLocationDisclosureCancel = () => {
-    setLocationDisclosureVisible(false);
-    setTargetDutyValue(null);
-  };
-
-  /* ================= CONFIRM DUTY CHANGE ================= */
-  const confirmDutyChange = async () => {
-    if (targetDutyValue === null) {
-      return;
-    }
-
-    const value = targetDutyValue;
-
-    setDutyModalVisible(false);
-
-    if (value === true) {
-      const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
-      const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
-
-      if (fgStatus !== "granted" || bgStatus !== "granted") {
-        setLocationDisclosureVisible(true);
-        return;
-      }
-
-      await proceedWithDutyActivation();
-      return;
-    }
-
-    try {
-      console.log("🔴 Calling FastAPI duty OFF...");
-
-      await stopLiveLocationTracking();
-
-      const response = await partnerApi.turnOffDuty();
-
-      console.log("✅ FastAPI duty OFF successful:", JSON.stringify(response, null, 2));
-
-      setIsAvailable(false);
-      setIsOutOfZone(false);
-      setOutOfBoundsModalVisible(false);
-      setDutyStartedAt(null);
-
-      await fetchAvailability();
-    } catch (error) {
-      console.error("❌ FastAPI duty OFF failed:", error);
-      Alert.alert(
-        "Unable to Go OFF-DUTY",
-        error instanceof Error ? error.message : "FastAPI could not update your duty status."
-      );
-    }
-  };
-
-  /* ================= CONFIRM LOGOUT ACTION ================= */
-  const confirmLogoutAction = async () => {
-    setLoadingLogout(true);
-
-    try {
-      setIsAvailable(false);
-      await stopLiveLocationTracking();
-      await turnOffDutyAndLogout();
-      setShowLogoutModal(false);
-      router.replace("/login");
-    } catch (error) {
-      console.error("❌ Logout error:", error);
-    } finally {
-      setLoadingLogout(false);
-    }
-  };
-
-  const handleLogout = () => {
-    setShowLogoutModal(true);
-  };
-
-  const handleCustomerCare = () => {
-    setCustomerCareModalVisible(true);
-  };
-
-  /* ================= LIVE DUTY TIMER TICK ================= */
-  useEffect(() => {
-    if (!isAvailable || !dutyStartedAt) {
-      return;
-    }
-
-    const updateTimer = () => {
-      const totals = calculateDutyTotals(dutyLogsJson, true, dutyStartedAt);
-
-      setTodayDutyMinutes(totals.today);
-      setWeeklyDutyMinutes(totals.weekly);
-      setMonthlyDutyMinutes(totals.monthly);
-    };
-
-    updateTimer();
-
-    const interval = setInterval(updateTimer, 15000);
-
-    return () => clearInterval(interval);
-  }, [isAvailable, dutyStartedAt, dutyLogsJson]);
-
-  useEffect(() => {
-    fetchSlides();
-  }, []);
-
-  /* ================= USE FOCUS EFFECT ================= */
-  useFocusEffect(
-    useCallback(() => {
-      const initScreen = async () => {
-        await fetchAvailability();
-        await fetchAssignedHubZone();
-        await loadNotifications();
-      };
-
-      initScreen();
-    }, [])
-  );
-
-  /* ================= NOTIFICATIONS SETUP ================= */
-  useEffect(() => {
-    const setupNotifications = async () => {
-      try {
-        await scheduleDailyDutyReminders();
-
-        const token = await registerForPushNotificationsAsync();
-
-        if (token) {
-          console.log("Push Token:", token);
-          await partnerApi.updatePushToken(token);
-          console.log("✅ Token saved to backend");
-        }
-      } catch (error: any) {
-        if (error?.message?.includes('401') || error?.status === 401) {
-          console.log('⚠️ Token expired, skipping notification setup');
-        } else {
-          console.log("❌ Notification setup error:", error);
-        }
-      }
-    };
-
-    setupNotifications();
-  }, []);
-
-  /* ================= AUTO SCROLL ================= */
-  useEffect(() => {
-    if (slides.length === 0) return;
-
-    autoScrollRef.current = setInterval(() => {
-      const next = (activeSlide + 1) % slides.length;
-      sliderRef.current?.scrollToIndex({ index: next, animated: true });
-      setActiveSlide(next);
-    }, 3000);
-
-    return () => {
-      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    };
-  }, [activeSlide, slides.length]);
-
-  const unreadCount = notifications.filter((item) => !item.is_read).length;
-
-  /* ================= UPDATE AVAILABILITY ================= */
-  const handleToggleAvailability = (value: boolean) => {
-    setTargetDutyValue(value);
-    setDutyModalVisible(true);
-  };
-
-  /* ================= OPEN ZONE MAP ================= */
-  const openZoneMap = async () => {
-    console.log("🗺️ Opening zone map...");
-    if (hubSubLocations.length === 0) {
-      await fetchAssignedHubZone();
-    }
-    console.log("📍 Opening modal with", hubSubLocations.length, "locations");
-    setZoneModalVisible(true);
-  };
-
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-          contentFit="contain"
-        />
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={handleCustomerCare} style={{ padding: 2 }}>
-            <Ionicons name="call" size={26} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.bellIcon}
-            onPress={() => router.push("/new-services")}
-          >
-            <Ionicons name="notifications" size={26} color="#000" />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => setShowMenu(true)}>
-            <Ionicons name="person-circle-outline" size={34} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* DROPDOWN */}
-      {showMenu && (
-        <Pressable style={styles.overlay} onPress={() => setShowMenu(false)} />
-      )}
-      {showMenu && (
-        <View style={styles.menu}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setShowMenu(false);
-              router.push("/my-account");
-            }}
-          >
-            <Text style={styles.menuText}>My Account</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setShowMenu(false);
-              handleLogout();
-            }}
-          >
-            <Text style={[styles.menuText, { color: "red" }]}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <FlatList
-        data={[{ key: "main" }]}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              try {
-                await fetchAvailability();
-                await loadNotifications();
-              } finally {
-                setRefreshing(false);
-              }
-            }}
-          />
-        }
-        renderItem={() => (
-          <View style={styles.container}>
-            <StatusBar backgroundColor="#FFD700" barStyle="dark-content" />
-
-            {/* SLIDER */}
-            <View style={styles.sliderWrapper}>
-              <FlatList
-                ref={sliderRef}
-                data={slides}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(_, i) => i.toString()}
-                onMomentumScrollEnd={(e) =>
-                  setActiveSlide(Math.round(e.nativeEvent.contentOffset.x / width))
+            const { sound } = await Audio.Sound.createAsync(
+                require("../assets/images/zone_alert.wav")
+            );
+
+            let playCount = 0;
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.isLoaded && status.didJustFinish && !status.isLooping) {
+                    playCount += 1;
+                    if (playCount < 2) {
+                        sound.replayAsync();
+                    } else {
+                        sound.unloadAsync();
+                    }
                 }
-                renderItem={({ item }) => (
-                  <Image
-                    source={{ uri: item }}
-                    style={styles.slideImage}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                    transition={300}
-                  />
-                )}
-              />
+            });
 
-              <View style={styles.dots}>
-                {slides.map((_, i) => (
-                  <View
-                    key={i}
-                    style={[styles.dot, activeSlide === i && styles.activeDot]}
-                  />
-                ))}
-              </View>
+            await sound.playAsync();
+            Vibration.vibrate([0, 400, 150, 400, 150, 400]);
+        } catch (error) {
+            console.log("❌ Alert sound error:", error);
+        }
+    };
+
+    const triggerOutOfBoundsPopUp = () => {
+        setOutOfBoundsModalVisible(true);
+        playAlertSound();
+    };
+
+    const hasAlertedOutOfBoundsRef = useRef(false);
+
+    /* ZONE MAP & GEOFENCING STATES */
+    const [zoneModalVisible, setZoneModalVisible] = useState(false);
+    const [isOutOfZone, setIsOutOfZone] = useState(false);
+    const [assignedHubName, setAssignedHubName] = useState<string>("Assigned Zone");
+    const [assignedLocationsStr, setAssignedLocationsStr] = useState<string>("");
+    const [assignedHubCoords, setAssignedHubCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [assignedPincodes, setAssignedPincodes] = useState<string[]>([]);
+    const [currentCoords, setCurrentCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [currentAreaName, setCurrentAreaName] = useState<string>("");
+    const [selectedPincodeInfo, setSelectedPincodeInfo] = useState<string | null>(null);
+    const [hubSubLocations, setHubSubLocations] = useState<HubSubLocation[]>([]);
+    const isZoneDataLoadedRef = useRef(false);
+
+    /* ================= FETCH ASSIGNED ZONE & HUB ================= */
+    const fetchAssignedHubZone = async () => {
+        try {
+            const response = (await partnerApi.assignedZone()) as any;
+
+            console.log("🗺️ ASSIGNED ZONE RESPONSE:", JSON.stringify(response, null, 2));
+
+            let zoneData = null;
+            if (response?.data?.hub_name) {
+                zoneData = response.data;
+            } else if (response?.data?.data?.hub_name) {
+                zoneData = response.data.data;
+            } else if (response?.hub_name) {
+                zoneData = response;
+            }
+
+            if (!zoneData?.hub_name) {
+                console.error("❌ Invalid assigned zone response:", response);
+                setHubSubLocations([]);
+                setAssignedPincodes([]);
+                return;
+            }
+
+            const hubName = String(zoneData.hub_name).trim();
+            setAssignedHubName(hubName);
+            setAssignedLocationsStr(String(zoneData.location || "").trim());
+
+            const subLocs: HubSubLocation[] = [];
+            const subLocations = zoneData.sub_locations || [];
+
+            if (subLocations.length === 0) {
+                console.warn("⚠️ No sub-locations found in response");
+
+                const extractedPincodes = (zoneData.location || "")
+                    .match(/\b\d{6}\b/g) || [];
+
+                if (extractedPincodes.length > 0) {
+                    console.log(`📮 Extracted ${extractedPincodes.length} pincodes from location string`);
+
+                    for (const pincode of extractedPincodes) {
+                        const subLoc = await geocodePincode(pincode, hubName);
+                        if (subLoc) {
+                            subLocs.push(subLoc);
+                        }
+                    }
+                }
+            } else {
+                console.log(`📌 Processing ${subLocations.length} sub-locations...`);
+
+                for (const sub of subLocations) {
+                    const locationName = String(sub.location_name || "").trim();
+                    let pincode = String(sub.pincode || "").trim();
+
+                    if (!pincode) {
+                        const extracted = extractPincode(locationName);
+                        if (extracted) {
+                            pincode = extracted;
+                        }
+                    }
+
+                    if (!pincode) {
+                        console.warn(`⚠️ No pincode found for: ${locationName}`);
+                        continue;
+                    }
+
+                    const subLoc = await geocodePincode(pincode, locationName);
+                    if (subLoc) {
+                        subLocs.push(subLoc);
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+
+            console.log(`✅ Processed ${subLocs.length} sub-locations with coordinates`);
+
+            setHubSubLocations(subLocs);
+            setAssignedPincodes(subLocs.map((item) => item.pincode).filter(Boolean));
+
+            const validCoordinates = subLocs.filter(
+                (item) =>
+                    typeof item.latitude === "number" &&
+                    !isNaN(item.latitude) &&
+                    Number.isFinite(item.latitude) &&
+                    typeof item.longitude === "number" &&
+                    !isNaN(item.longitude) &&
+                    Number.isFinite(item.longitude)
+            );
+
+            console.log(`📍 Valid coordinate count: ${validCoordinates.length}`);
+
+            if (validCoordinates.length > 0) {
+                const avgLat = validCoordinates.reduce((sum, item) => sum + item.latitude!, 0) / validCoordinates.length;
+                const avgLng = validCoordinates.reduce((sum, item) => sum + item.longitude!, 0) / validCoordinates.length;
+
+                setAssignedHubCoords({
+                    latitude: avgLat,
+                    longitude: avgLng,
+                });
+
+                console.log("📍 ASSIGNED HUB CENTER:", avgLat, avgLng);
+            } else {
+                console.error("❌ No valid coordinates found for any location");
+                setAssignedHubCoords(null);
+            }
+
+            isZoneDataLoadedRef.current = true;
+            console.log("✅ Zone data loaded successfully");
+
+        } catch (error) {
+            console.error("❌ Error fetching assigned hub zone:", error);
+            setHubSubLocations([]);
+            setAssignedPincodes([]);
+            setAssignedHubCoords(null);
+            isZoneDataLoadedRef.current = true;
+        }
+    };
+
+    // ================= ZONE MAP REF =================
+    const zoneMapRef = useRef<MapView | null>(null);
+
+    // ================= FIT MAP TO ASSIGNED ZONE + LIVE LOCATION =================
+    useEffect(() => {
+        if (!zoneModalVisible) return;
+        if (hubSubLocations.length === 0) {
+            console.log("📍 No sub-locations to show on map");
+            return;
+        }
+
+        const zonePoints = hubSubLocations
+            .filter(
+                (item) =>
+                    typeof item.latitude === "number" &&
+                    Number.isFinite(item.latitude) &&
+                    typeof item.longitude === "number" &&
+                    Number.isFinite(item.longitude)
+            )
+            .map((item) => ({
+                latitude: item.latitude!,
+                longitude: item.longitude!,
+            }));
+
+        if (zonePoints.length === 0) {
+            console.log("📍 No valid zone points found");
+            return;
+        }
+
+        const allPoints = currentCoords
+            ? [currentCoords, ...zonePoints]
+            : zonePoints;
+
+        console.log(`📍 Fitting map with ${allPoints.length} points`);
+
+        setTimeout(() => {
+            zoneMapRef.current?.fitToCoordinates(
+                allPoints,
+                {
+                    edgePadding: {
+                        top: 140,
+                        right: 40,
+                        bottom: 300,
+                        left: 40,
+                    },
+                    animated: true,
+                }
+            );
+        }, 500);
+
+    }, [zoneModalVisible, currentCoords, hubSubLocations]);
+
+    /* DRAGGABLE PAN RESPONDER FOR FLOATING BUTTON */
+    const pan = useRef(new Animated.ValueXY()).current;
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+            },
+            onPanResponderGrant: () => {
+                pan.setOffset({
+                    x: (pan.x as any)._value || 0,
+                    y: (pan.y as any)._value || 0,
+                });
+                pan.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+                useNativeDriver: false,
+            }),
+            onPanResponderRelease: () => {
+                pan.flattenOffset();
+            },
+        })
+    ).current;
+
+    /* HAVERSINE DISTANCE */
+    const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    /* GENERATES CONVEX HULL */
+    const getConvexHullCoordinates = (points: Array<{ latitude: number; longitude: number }>) => {
+        if (!points || points.length < 3) return [];
+        const validPoints = points.filter(
+            (p) =>
+                p &&
+                typeof p.latitude === "number" &&
+                Number.isFinite(p.latitude) &&
+                typeof p.longitude === "number" &&
+                Number.isFinite(p.longitude)
+        );
+        if (validPoints.length < 3) return [];
+
+        const sorted = [...validPoints].sort((a, b) =>
+            a.longitude === b.longitude ? a.latitude - b.latitude : a.longitude - b.longitude
+        );
+
+        const cross = (o: any, a: any, b: any) =>
+            (a.longitude - o.longitude) * (b.latitude - o.latitude) -
+            (a.latitude - o.latitude) * (b.longitude - o.longitude);
+
+        const lower: any[] = [];
+        for (const p of sorted) {
+            while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+                lower.pop();
+            }
+            lower.push(p);
+        }
+
+        const upper: any[] = [];
+        for (let i = sorted.length - 1; i >= 0; i--) {
+            const p = sorted[i];
+            while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+                upper.pop();
+            }
+            upper.push(p);
+        }
+
+        lower.pop();
+        upper.pop();
+        return lower.concat(upper);
+    };
+
+    /* GENERATES ORGANIC BOUNDARY POLYGON */
+    const generatePincodeBoundaryPoints = (lat: number, lng: number, radiusKm: number = 1.3) => {
+        if (
+            typeof lat !== "number" ||
+            !Number.isFinite(lat) ||
+            typeof lng !== "number" ||
+            !Number.isFinite(lng)
+        )
+            return [];
+        const cosLat = Math.cos((lat * Math.PI) / 180);
+        if (Math.abs(cosLat) < 0.0001) return [];
+
+        const points: Array<{ latitude: number; longitude: number }> = [];
+        const numPoints = 12;
+        const seed = (Math.abs(lat * 1000) + Math.abs(lng * 1000)) % 10;
+        for (let i = 0; i < numPoints; i++) {
+            const angle = (i * 2 * Math.PI) / numPoints;
+            const varRadius = radiusKm * (0.85 + 0.3 * Math.sin(angle * 3 + seed));
+            const latOffset = (varRadius / 111) * Math.cos(angle);
+            const lngOffset = (varRadius / (111 * cosLat)) * Math.sin(angle);
+            const ptLat = lat + latOffset;
+            const ptLng = lng + lngOffset;
+            if (
+                typeof ptLat === "number" &&
+                Number.isFinite(ptLat) &&
+                typeof ptLng === "number" &&
+                Number.isFinite(ptLng)
+            ) {
+                points.push({
+                    latitude: ptLat,
+                    longitude: ptLng,
+                });
+            }
+        }
+        return points;
+    };
+
+    /* ================= CHECK ZONE BOUNDARY ================= */
+    const checkZoneBoundary = async (lat: number, lng: number) => {
+        setCurrentCoords({ latitude: lat, longitude: lng });
+
+        if (!isZoneDataLoadedRef.current && hubSubLocations.length === 0) {
+            console.log("⏳ Zone data loading in progress. Postponing boundary evaluation.");
+            return false;
+        }
+
+        let isInside = false;
+        let currentAreaStr = "";
+
+        if (assignedHubCoords) {
+            const distToHubKm = getDistanceFromLatLonInKm(
+                lat,
+                lng,
+                assignedHubCoords.latitude,
+                assignedHubCoords.longitude
+            );
+            if (distToHubKm <= 4.5) {
+                isInside = true;
+            }
+        }
+
+        if (!isInside && hubSubLocations && hubSubLocations.length > 0) {
+            for (const sub of hubSubLocations) {
+                if (sub.latitude && sub.longitude) {
+                    const distToSubKm = getDistanceFromLatLonInKm(lat, lng, sub.latitude, sub.longitude);
+                    if (distToSubKm <= 3.5) {
+                        isInside = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        try {
+            const reversed = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+            if (reversed && reversed.length > 0) {
+                const place = reversed[0];
+                const postalCode = String(place.postalCode || "").trim();
+                const namePart = (place.name || place.street || "").trim();
+                const subregionPart = (place.subregion || place.district || place.city || "").trim();
+                currentAreaStr = `${namePart ? namePart + ", " : ""}${subregionPart}${postalCode ? " (" + postalCode + ")" : ""
+                    }`;
+                setCurrentAreaName(currentAreaStr);
+
+                if (!isInside && postalCode) {
+                    const allPincodes = [
+                        ...assignedPincodes,
+                        ...hubSubLocations.map((s) => s.pincode).filter(Boolean),
+                        ...(assignedLocationsStr.match(/\b\d{6}\b/g) || []),
+                    ];
+
+                    if (allPincodes.some((pin) => pin && postalCode.includes(pin.trim()))) {
+                        isInside = true;
+                    }
+                }
+            }
+        } catch (e) {
+            console.log("Reverse geocode error:", e);
+        }
+
+        const outOfBounds = !isInside;
+        setIsOutOfZone(outOfBounds);
+
+        if (!outOfBounds) {
+            hasAlertedOutOfBoundsRef.current = false;
+            setOutOfBoundsModalVisible(false);
+        } else {
+            if (!hasAlertedOutOfBoundsRef.current) {
+                hasAlertedOutOfBoundsRef.current = true;
+                setOutOfBoundsModalVisible(true);
+                triggerOutOfBoundsPopUp();
+            }
+        }
+
+        try {
+            await partnerApi.updateLocation(lat, lng, outOfBounds);
+        } catch (error: any) {
+            // Don't log 401 errors for location updates
+            if (error?.message?.includes('401') || error?.status === 401) {
+                console.log('⚠️ Token expired, skipping location update');
+            } else {
+                console.log("❌ Backend location update error:", error);
+            }
+        }
+
+        return outOfBounds;
+    };
+
+    const handleNavigateToZone = () => {
+        if (assignedHubCoords) {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${assignedHubCoords.latitude},${assignedHubCoords.longitude}`;
+            Linking.openURL(url);
+        } else {
+            const query = encodeURIComponent(assignedHubName);
+            Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+        }
+    };
+
+    const formatMinutesToHours = (totalMinutes: number | string) => {
+        const minsNum = Math.max(0, parseInt(String(totalMinutes || 0), 10) || 0);
+        if (minsNum === 0) return "0 min";
+        const hours = Math.floor(minsNum / 60);
+        const mins = minsNum % 60;
+
+        if (hours > 0 && mins > 0) {
+            return `${hours}h ${mins} min`;
+        } else if (hours > 0) {
+            return `${hours}h`;
+        } else {
+            return `${mins} min`;
+        }
+    };
+
+    const calculateDutyTotals = (
+        logs: Record<string, number> = {},
+        active: boolean = false,
+        startedAt: string | null = null
+    ) => {
+        const todayKey = dayjs().format("YYYY-MM-DD");
+        const currentMonthKey = dayjs().format("YYYY-MM");
+
+        const now = dayjs();
+        const dayOfWeek = now.day();
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const startOfWeek = now.subtract(diffToMonday, "day").startOf("day");
+        const endOfWeek = startOfWeek.add(6, "day").endOf("day");
+
+        let todayBase = Number(logs[todayKey] || 0);
+        let weeklyBase = 0;
+        let monthlyBase = 0;
+
+        Object.entries(logs).forEach(([dateStr, mins]) => {
+            const minVal = Number(mins) || 0;
+            const d = dayjs(dateStr);
+
+            if (d.isValid()) {
+                if (
+                    (d.isSame(startOfWeek, "day") || d.isAfter(startOfWeek)) &&
+                    (d.isSame(endOfWeek, "day") || d.isBefore(endOfWeek))
+                ) {
+                    weeklyBase += minVal;
+                }
+                if (dateStr.startsWith(currentMonthKey)) {
+                    monthlyBase += minVal;
+                }
+            }
+        });
+
+        let activeSessionMins = 0;
+        let todayActiveMins = 0;
+        let weeklyActiveMins = 0;
+        let monthlyActiveMins = 0;
+
+        if (active && startedAt) {
+            const start = dayjs(startedAt);
+            if (start.isValid() && now.isAfter(start)) {
+                activeSessionMins = Math.max(0, now.diff(start, "minute"));
+
+                const startOfToday = now.startOf("day");
+                const effectiveTodayStart = start.isAfter(startOfToday) ? start : startOfToday;
+                todayActiveMins = Math.max(0, now.diff(effectiveTodayStart, "minute"));
+
+                const effectiveWeeklyStart = start.isAfter(startOfWeek) ? start : startOfWeek;
+                weeklyActiveMins = Math.max(0, now.diff(effectiveWeeklyStart, "minute"));
+
+                const startOfMonth = now.startOf("month");
+                const effectiveMonthlyStart = start.isAfter(startOfMonth) ? start : startOfMonth;
+                monthlyActiveMins = Math.max(0, now.diff(effectiveMonthlyStart, "minute"));
+            }
+        }
+
+        const maxTodayMinutes = Math.max(0, now.diff(now.startOf("day"), "minute"));
+        const rawToday = todayBase + todayActiveMins;
+
+        return {
+            today: Math.min(rawToday, maxTodayMinutes),
+            weekly: weeklyBase + weeklyActiveMins,
+            monthly: monthlyBase + monthlyActiveMins,
+        };
+    };
+
+    const sliderRef = useRef<FlatList>(null);
+    const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+    const liveLocationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    /* ================= LIVE LOCATION TRACKING ================= */
+    const startLiveLocationTracking = async (userId: string) => {
+        await stopLiveLocationTracking();
+
+        // Check if running in Expo Go - background location has limitations
+        const isExpoGo = Constants?.expoConfig?.name === 'Expo Go';
+        if (isExpoGo) {
+            console.log('⚠️ Running in Expo Go - background location has limited support');
+        }
+
+        let { status: fgStatus } = await Location.getForegroundPermissionsAsync();
+        if (fgStatus !== "granted") {
+            const { status: reqStatus } = await Location.requestForegroundPermissionsAsync();
+            fgStatus = reqStatus;
+        }
+
+        if (fgStatus !== "granted") {
+            console.log("⚠️ Location permission not granted for live tracking.");
+            return;
+        }
+
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+            .then(async (pos) => {
+                if (pos?.coords) {
+                    try {
+                        await partnerApi.updateLocation(pos.coords.latitude, pos.coords.longitude);
+                        await checkZoneBoundary(pos.coords.latitude, pos.coords.longitude);
+                    } catch (err: any) {
+                        if (err?.message?.includes('401') || err?.status === 401) {
+                            console.log('⚠️ Token expired, skipping initial location update');
+                        } else {
+                            console.log("Initial location update error:", err);
+                        }
+                    }
+                }
+            })
+            .catch((err) => console.log("Initial live location error:", err));
+
+        try {
+            const sub = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.Balanced,
+                    timeInterval: 4000,
+                    distanceInterval: 5,
+                },
+                async (pos) => {
+                    if (pos?.coords) {
+                        try {
+                            await partnerApi.updateLocation(pos.coords.latitude, pos.coords.longitude);
+                            checkZoneBoundary(pos.coords.latitude, pos.coords.longitude);
+                        } catch (err: any) {
+                            if (err?.message?.includes('401') || err?.status === 401) {
+                                console.log('⚠️ Token expired during location update, skipping');
+                            } else {
+                                console.log("❌ Watch location update error:", err);
+                            }
+                        }
+                    }
+                }
+            );
+            locationSubscriptionRef.current = sub;
+        } catch (err) {
+            console.log("Error starting watchPositionAsync:", err);
+        }
+
+        // Only start background location if not in Expo Go
+        if (!isExpoGo) {
+            try {
+                const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+                if (bgStatus === "granted") {
+                    const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+                    if (!isRegistered) {
+                        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+                            accuracy: Location.Accuracy.High,
+                            timeInterval: 1000,
+                            distanceInterval: 1,
+                            showsBackgroundLocationIndicator: true,
+                            foregroundService: {
+                                notificationTitle: "Neatify Partner Active 📍",
+                                notificationBody: "Live location tracking active while on-duty.",
+                                notificationColor: "#FFD700",
+                            },
+                        });
+                        console.log("✅ Rapido-style background location tracking active");
+                    }
+                }
+            } catch (err) {
+                console.log("Notice on background service:", err);
+            }
+        }
+    };
+
+    const stopLiveLocationTracking = async () => {
+        console.log('🛑 Stopping location tracking...');
+
+        if (liveLocationIntervalRef.current) {
+            clearInterval(liveLocationIntervalRef.current);
+            liveLocationIntervalRef.current = null;
+        }
+
+        if (locationSubscriptionRef.current) {
+            locationSubscriptionRef.current.remove();
+            locationSubscriptionRef.current = null;
+        }
+
+        try {
+            const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+            if (isRegistered) {
+                await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+                console.log('🛑 Background location task stopped');
+            }
+        } catch (err) {
+            console.log('Error stopping background task:', err);
+        }
+
+        try {
+            await partnerApi.clearLocation();
+        } catch (error: any) {
+            if (error?.message?.includes('401') || error?.status === 401) {
+                console.log('⚠️ Token expired, skipping location clear');
+            } else {
+                console.log("❌ Error clearing partner location:", error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            stopLiveLocationTracking();
+        };
+    }, []);
+
+    /* ================= APP STATE LISTENER - REFRESH TOKEN ON FOCUS ================= */
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+            // When app comes to foreground
+            if (appState.match(/inactive|background/) && nextAppState === 'active') {
+                console.log('🔄 App came to foreground, checking session...');
+                try {
+                    // Check if token is still valid
+                    await authApi.me();
+                    console.log('✅ Session valid');
+                } catch (error: any) {
+                    if (error?.message?.includes('401') || error?.status === 401) {
+                        console.log('🔄 Token expired, trying to refresh...');
+                        try {
+                            // Try to refresh token
+                            const refreshResponse = await authApi.refreshToken();
+                            if (refreshResponse?.access_token) {
+                                console.log('✅ Token refreshed');
+                            }
+                        } catch (refreshError) {
+                            console.log('❌ Token refresh failed, redirecting to login...');
+                            router.replace('/login');
+                        }
+                    }
+                }
+            }
+            setAppState(nextAppState);
+        });
+
+        return () => subscription.remove();
+    }, [appState]);
+
+    /* ================= BACK HANDLER ================= */
+    useFocusEffect(
+        useCallback(() => {
+            const backAction = () => {
+                if (router.canGoBack()) {
+                    router.back();
+                    return true;
+                }
+                return false;
+            };
+
+            const sub = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+            return () => sub.remove();
+        }, [])
+    );
+
+    /* ================= Notifications load ================= */
+    const loadNotifications = async () => {
+        try {
+            const data = await partnerApi.notifications();
+            setNotifications(data);
+        } catch (error) {
+            console.error("❌ Failed to load notifications:", error);
+            setNotifications([]);
+        }
+    };
+
+    /* ================= FETCH SLIDES ================= */
+    const fetchSlides = async () => {
+        try {
+            const data = await partnerApi.heroImages();
+            const images = Array.isArray(data) ? data : data?.images || [];
+            const imageUrls = images.map((item: any) => item.image_url).filter(Boolean);
+            setSlides(imageUrls);
+        } catch (error: any) {
+            if (error?.message?.includes('401') || error?.status === 401) {
+                console.log('⚠️ Token expired, skipping hero images fetch');
+            } else {
+                console.error("❌ Failed to fetch hero images:", error);
+            }
+            setSlides([]);
+        }
+    };
+
+    /* ================= FETCH AVAILABILITY / DASHBOARD ================= */
+    const fetchAvailability = async () => {
+        try {
+            console.log("🔄 Fetching partner dashboard from FastAPI...");
+
+            const dashboard = await partnerApi.dashboard();
+
+            console.log("✅ Partner dashboard received:", JSON.stringify(dashboard, null, 2));
+
+            if (!dashboard) {
+                console.log("⚠️ Dashboard response is empty.");
+                return;
+            }
+
+            const duty = dashboard.duty;
+
+            if (duty) {
+                const active = Boolean(duty.is_available);
+
+                setIsAvailable(active);
+                setTodayDutyMinutes(Number(duty.today_minutes || 0));
+                setWeeklyDutyMinutes(Number(duty.weekly_minutes || 0));
+                setMonthlyDutyMinutes(Number(duty.monthly_minutes || 0));
+
+                console.log("🟢 Duty status:", active);
+                console.log("⏱️ Duty minutes:", {
+                    today: duty.today_minutes,
+                    weekly: duty.weekly_minutes,
+                    monthly: duty.monthly_minutes,
+                });
+            }
+
+            const bookings = dashboard.bookings;
+
+            if (bookings) {
+                setNewCount(Number(bookings.new || 0));
+                setAssignedCount(Number(bookings.assigned || 0));
+                setCompletedCount(Number(bookings.completed || 0));
+                setCancelledCount(Number(bookings.cancelled || 0));
+
+                console.log("📊 Booking counts:", bookings);
+            }
+
+            if (duty?.is_available) {
+                hasAlertedOutOfBoundsRef.current = false;
+
+                await fetchAssignedHubZone();
+
+                if (!locationSubscriptionRef.current) {
+                    try {
+                        const currentUser = await authApi.me();
+                        await startLiveLocationTracking(currentUser.id);
+                    } catch (error) {
+                        console.error("❌ Failed to start live tracking:", error);
+                    }
+                }
+            } else {
+                hasAlertedOutOfBoundsRef.current = false;
+                setOutOfBoundsModalVisible(false);
+                setIsOutOfZone(false);
+                await stopLiveLocationTracking();
+            }
+        } catch (error: any) {
+            if (error?.message?.includes('401') || error?.status === 401) {
+                console.log('⚠️ Token expired during dashboard fetch');
+                // Try to refresh token
+                try {
+                    await authApi.refreshToken();
+                    // Retry dashboard fetch
+                    await fetchAvailability();
+                } catch (refreshError) {
+                    console.log('❌ Token refresh failed, redirecting to login...');
+                    router.replace('/login');
+                }
+            } else {
+                console.error("❌ Failed to fetch partner dashboard:", error);
+                Alert.alert(
+                    "Dashboard Error",
+                    error instanceof Error ? error.message : "Unable to load partner dashboard."
+                );
+            }
+        }
+    };
+
+    /* ================= PROCEED WITH DUTY ACTIVATION ================= */
+    const proceedWithDutyActivation = async () => {
+        const hasGps = await Location.hasServicesEnabledAsync();
+
+        if (!hasGps) {
+            Alert.alert(
+                "Location Services Disabled 🛰️",
+                "Mobile GPS/Location service is turned OFF. Please turn ON Location in your phone settings to go ON-DUTY.",
+                [
+                    {
+                        text: "Cancel",
+                        style: "cancel",
+                    },
+                    {
+                        text: "Open Settings",
+                        onPress: () => Linking.openSettings(),
+                    },
+                ]
+            );
+            return;
+        }
+
+        setLocationLoading(true);
+
+        let initialLocStr = "";
+        let isOut = false;
+
+        try {
+            const initialPos = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High,
+            });
+
+            initialLocStr = `${initialPos.coords.latitude}, ${initialPos.coords.longitude}`;
+
+            console.log("📍 Initial location:", initialLocStr);
+
+            await fetchAssignedHubZone();
+
+            isOut = await checkZoneBoundary(initialPos.coords.latitude, initialPos.coords.longitude);
+        } catch (error) {
+            console.log("❌ Error getting initial location:", error);
+        } finally {
+            setLocationLoading(false);
+        }
+
+        try {
+            console.log("🟢 Calling FastAPI duty ON...");
+
+            const response = await partnerApi.turnOnDuty(initialLocStr);
+
+            console.log("✅ FastAPI duty ON successful:", JSON.stringify(response, null, 2));
+
+            setIsAvailable(true);
+            setIsOutOfZone(isOut);
+
+            const nowStr = new Date().toISOString();
+            setDutyStartedAt(nowStr);
+
+            // Auto-open zone map when duty starts
+            await fetchAssignedHubZone();
+            setZoneModalVisible(true);
+
+            try {
+                const currentUser = await authApi.me();
+                await startLiveLocationTracking(currentUser.id);
+            } catch (error) {
+                console.error("❌ Failed to start live tracking:", error);
+            }
+
+            await fetchAvailability();
+
+            if (isOut) {
+                triggerOutOfBoundsPopUp();
+            }
+        } catch (error) {
+            console.error("❌ FastAPI duty ON failed:", error);
+            setIsAvailable(false);
+            Alert.alert(
+                "Unable to Go ON-DUTY",
+                error instanceof Error ? error.message : "FastAPI could not update your duty status."
+            );
+        }
+    };
+
+    /* ================= HANDLE LOCATION DISCLOSURE CONTINUE ================= */
+    const handleLocationDisclosureContinue = async () => {
+        setLocationDisclosureVisible(false);
+
+        const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+
+        if (fgStatus !== "granted") {
+            Alert.alert(
+                "Location Permission Required 📍",
+                "Permission to access location was denied. Please grant location access in your device settings to go ON-DUTY.",
+                [
+                    {
+                        text: "Cancel",
+                        style: "cancel",
+                    },
+                    {
+                        text: "Open Settings",
+                        onPress: () => Linking.openSettings(),
+                    },
+                ]
+            );
+            return;
+        }
+
+        const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+
+        if (bgStatus !== "granted") {
+            Alert.alert(
+                "Background Location Permission Required 📍",
+                "Background location permission is required so Neatify can assign jobs and track duty status while on duty.",
+                [
+                    {
+                        text: "Cancel",
+                        style: "cancel",
+                    },
+                    {
+                        text: "Open Settings",
+                        onPress: () => Linking.openSettings(),
+                    },
+                ]
+            );
+            return;
+        }
+
+        await proceedWithDutyActivation();
+    };
+
+    const handleLocationDisclosureCancel = () => {
+        setLocationDisclosureVisible(false);
+        setTargetDutyValue(null);
+    };
+
+    /* ================= CONFIRM DUTY CHANGE ================= */
+    const confirmDutyChange = async () => {
+        if (targetDutyValue === null) {
+            return;
+        }
+
+        const value = targetDutyValue;
+
+        setDutyModalVisible(false);
+
+        if (value === true) {
+            const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
+            const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
+
+            if (fgStatus !== "granted" || bgStatus !== "granted") {
+                setLocationDisclosureVisible(true);
+                return;
+            }
+
+            await proceedWithDutyActivation();
+            return;
+        }
+
+        try {
+            console.log("🔴 Calling FastAPI duty OFF...");
+
+            await stopLiveLocationTracking();
+
+            const response = await partnerApi.turnOffDuty();
+
+            console.log("✅ FastAPI duty OFF successful:", JSON.stringify(response, null, 2));
+
+            setIsAvailable(false);
+            setIsOutOfZone(false);
+            setOutOfBoundsModalVisible(false);
+            setDutyStartedAt(null);
+
+            await fetchAvailability();
+        } catch (error) {
+            console.error("❌ FastAPI duty OFF failed:", error);
+            Alert.alert(
+                "Unable to Go OFF-DUTY",
+                error instanceof Error ? error.message : "FastAPI could not update your duty status."
+            );
+        }
+    };
+
+    /* ================= CONFIRM LOGOUT ACTION ================= */
+    const confirmLogoutAction = async () => {
+        setLoadingLogout(true);
+
+        try {
+            setIsAvailable(false);
+            await stopLiveLocationTracking();
+            await turnOffDutyAndLogout();
+            setShowLogoutModal(false);
+            router.replace("/login");
+        } catch (error) {
+            console.error("❌ Logout error:", error);
+        } finally {
+            setLoadingLogout(false);
+        }
+    };
+
+    const handleLogout = () => {
+        setShowLogoutModal(true);
+    };
+
+    const handleCustomerCare = () => {
+        setCustomerCareModalVisible(true);
+    };
+
+    /* ================= LIVE DUTY TIMER TICK ================= */
+    useEffect(() => {
+        if (!isAvailable || !dutyStartedAt) {
+            return;
+        }
+
+        const updateTimer = () => {
+            const totals = calculateDutyTotals(dutyLogsJson, true, dutyStartedAt);
+
+            setTodayDutyMinutes(totals.today);
+            setWeeklyDutyMinutes(totals.weekly);
+            setMonthlyDutyMinutes(totals.monthly);
+        };
+
+        updateTimer();
+
+        const interval = setInterval(updateTimer, 15000);
+
+        return () => clearInterval(interval);
+    }, [isAvailable, dutyStartedAt, dutyLogsJson]);
+
+    useEffect(() => {
+        fetchSlides();
+    }, []);
+
+    /* ================= USE FOCUS EFFECT ================= */
+    useFocusEffect(
+        useCallback(() => {
+            const initScreen = async () => {
+                await fetchAvailability();
+                await fetchAssignedHubZone();
+                await loadNotifications();
+            };
+
+            initScreen();
+        }, [])
+    );
+
+    /* ================= NOTIFICATIONS SETUP ================= */
+    useEffect(() => {
+        const setupNotifications = async () => {
+            try {
+                await scheduleDailyDutyReminders();
+
+                const token = await registerForPushNotificationsAsync();
+
+                if (token) {
+                    console.log("Push Token:", token);
+                    await partnerApi.updatePushToken(token);
+                    console.log("✅ Token saved to backend");
+                }
+            } catch (error: any) {
+                if (error?.message?.includes('401') || error?.status === 401) {
+                    console.log('⚠️ Token expired, skipping notification setup');
+                } else {
+                    console.log("❌ Notification setup error:", error);
+                }
+            }
+        };
+
+        setupNotifications();
+    }, []);
+
+    /* ================= AUTO SCROLL ================= */
+    useEffect(() => {
+        if (slides.length === 0) return;
+
+        autoScrollRef.current = setInterval(() => {
+            const next = (activeSlide + 1) % slides.length;
+            sliderRef.current?.scrollToIndex({ index: next, animated: true });
+            setActiveSlide(next);
+        }, 3000);
+
+        return () => {
+            if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+        };
+    }, [activeSlide, slides.length]);
+
+    const unreadCount = notifications.filter((item) => !item.is_read).length;
+
+    /* ================= UPDATE AVAILABILITY ================= */
+    const handleToggleAvailability = (value: boolean) => {
+        setTargetDutyValue(value);
+        setDutyModalVisible(true);
+    };
+
+    /* ================= OPEN ZONE MAP ================= */
+    const openZoneMap = async () => {
+        console.log("🗺️ Opening zone map...");
+        if (hubSubLocations.length === 0) {
+            await fetchAssignedHubZone();
+        }
+        console.log("📍 Opening modal with", hubSubLocations.length, "locations");
+        setZoneModalVisible(true);
+    };
+
+    return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+            {/* HEADER */}
+            <View style={styles.header}>
+                <Image
+                    source={require("../assets/images/logo.png")}
+                    style={styles.logo}
+                    contentFit="contain"
+                />
+
+                <View style={styles.headerRight}>
+                    <TouchableOpacity onPress={handleCustomerCare} style={{ padding: 2 }}>
+                        <Ionicons name="call" size={26} color="#000" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.bellIcon}
+                        onPress={() => router.push("/new-services")}
+                    >
+                        <Ionicons name="notifications" size={26} color="#000" />
+                        {unreadCount > 0 && (
+                            <View style={styles.badge}>
+                                <Text style={styles.badgeText}>{unreadCount}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => setShowMenu(true)}>
+                        <Ionicons name="person-circle-outline" size={34} color="#000" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            {/* OUT OF BOUNDS WARNING BANNER */}
-            {isOutOfZone && (
-              <TouchableOpacity
-                style={styles.outOfZoneBanner}
-                onPress={openZoneMap}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="warning" size={24} color="#fff" />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.outOfZoneBannerTitle}>OUT OF BOUNDS ALERT! 🚨</Text>
-                  <Text style={styles.outOfZoneBannerSub}>
-                    Outside assigned zone ({assignedHubName}). Tap to view zone & navigate.
-                  </Text>
+            {/* DROPDOWN */}
+            {showMenu && (
+                <Pressable style={styles.overlay} onPress={() => setShowMenu(false)} />
+            )}
+            {showMenu && (
+                <View style={styles.menu}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setShowMenu(false);
+                            router.push("/my-account");
+                        }}
+                    >
+                        <Text style={styles.menuText}>My Account</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setShowMenu(false);
+                            handleLogout();
+                        }}
+                    >
+                        <Text style={[styles.menuText, { color: "red" }]}>Logout</Text>
+                    </TouchableOpacity>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#fff" />
-              </TouchableOpacity>
             )}
 
-            {/* TOGGLE */}
-            <View style={styles.availabilityWrapper}>
-              <Text style={styles.availabilityText}>GO ON-DUTY</Text>
-              <Switch
-                value={isAvailable}
-                onValueChange={handleToggleAvailability}
-                trackColor={{ false: "#ede4e4", true: "#0fd357" }}
-              />
-            </View>
-            {/* AVAILABILITY CALENDAR */}
-<View style={styles.actionWrapper}>
-  <TouchableOpacity
-    style={[styles.primaryBtn, styles.actionBtnRow]}
-    onPress={() => router.push("/availability-calendar")}
-  >
-    <Ionicons name="calendar-outline" size={18} color="#000" />
+            <FlatList
+                data={[{ key: "main" }]}
+                contentContainerStyle={{ paddingBottom: 120 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={async () => {
+                            setRefreshing(true);
+                            try {
+                                await fetchAvailability();
+                                await loadNotifications();
+                            } finally {
+                                setRefreshing(false);
+                            }
+                        }}
+                    />
+                }
+                renderItem={() => (
+                    <View style={styles.container}>
+                        <StatusBar backgroundColor="#FFD700" barStyle="dark-content" />
 
-    <Text style={styles.primaryBtnText}>
-      My Availability Calendar
-    </Text>
-  </TouchableOpacity>
-</View>
+                        {/* SLIDER */}
+                        <View style={styles.sliderWrapper}>
+                            <FlatList
+                                ref={sliderRef}
+                                data={slides}
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                keyExtractor={(_, i) => i.toString()}
+                                onMomentumScrollEnd={(e) =>
+                                    setActiveSlide(Math.round(e.nativeEvent.contentOffset.x / width))
+                                }
+                                renderItem={({ item }) => (
+                                    <Image
+                                        source={{ uri: item }}
+                                        style={styles.slideImage}
+                                        contentFit="cover"
+                                        cachePolicy="disk"
+                                        transition={300}
+                                    />
+                                )}
+                            />
 
-            {/* WORKING HOURS SECTION */}
-            <View style={styles.sectionHeaderWrapper}>
-              <Text style={styles.sectionHeaderText}>Working Hours</Text>
-            </View>
+                            <View style={styles.dots}>
+                                {slides.map((_, i) => (
+                                    <View
+                                        key={i}
+                                        style={[styles.dot, activeSlide === i && styles.activeDot]}
+                                    />
+                                ))}
+                            </View>
+                        </View>
 
-            {/* DUTY HOURS SUMMARY */}
-            <View style={styles.dutyHoursRow}>
-              <View style={styles.dutyHoursBox}>
-                <Text style={styles.dutyHoursTitle}>Today</Text>
-                <Text style={styles.dutyHoursValue}>
-                  {formatMinutesToHours(todayDutyMinutes)}
-                </Text>
-              </View>
+                        {/* OUT OF BOUNDS WARNING BANNER */}
+                        {isOutOfZone && (
+                            <TouchableOpacity
+                                style={styles.outOfZoneBanner}
+                                onPress={openZoneMap}
+                                activeOpacity={0.85}
+                            >
+                                <Ionicons name="warning" size={24} color="#fff" />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={styles.outOfZoneBannerTitle}>OUT OF BOUNDS ALERT! 🚨</Text>
+                                    <Text style={styles.outOfZoneBannerSub}>
+                                        Outside assigned zone ({assignedHubName}). Tap to view zone & navigate.
+                                    </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        )}
 
-              <View style={styles.dutyHoursBox}>
-                <Text style={styles.dutyHoursTitle}>Weekly</Text>
-                <Text style={styles.dutyHoursValue}>
-                  {formatMinutesToHours(weeklyDutyMinutes)}
-                </Text>
-              </View>
+                        {/* TOGGLE */}
+                        <View style={styles.availabilityWrapper}>
+                            <Text style={styles.availabilityText}>GO ON-DUTY</Text>
+                            <Switch
+                                value={isAvailable}
+                                onValueChange={handleToggleAvailability}
+                                trackColor={{ false: "#ede4e4", true: "#0fd357" }}
+                            />
+                        </View>
+                        {/* AVAILABILITY CALENDAR */}
+                        <View style={styles.actionWrapper}>
+                            <TouchableOpacity
+                                style={[styles.primaryBtn, styles.actionBtnRow]}
+                                onPress={() => router.push("/availability-calendar")}
+                            >
+                                <Ionicons name="calendar-outline" size={18} color="#000" />
 
-              <View style={styles.dutyHoursBox}>
-                <Text style={styles.dutyHoursTitle}>Monthly</Text>
-                <Text style={styles.dutyHoursValue}>
-                  {formatMinutesToHours(monthlyDutyMinutes)}
-                </Text>
-              </View>
-            </View>
-            
+                                <Text style={styles.primaryBtnText}>
+                                    My Availability Calendar
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
-            {/* SERVICE SUMMARY */}
-            <View style={styles.sectionHeaderWithSubRow}>
-              <Text style={styles.sectionHeaderText}>Service Summary</Text>
-              <Text style={styles.sectionSubHeaderText}>Tap box to view</Text>
-            </View>
+                        {/* WORKING HOURS SECTION */}
+                        <View style={styles.sectionHeaderWrapper}>
+                            <Text style={styles.sectionHeaderText}>Working Hours</Text>
+                        </View>
 
-            <View style={styles.summaryRow}>
-              <TouchableOpacity
-                style={[styles.summaryBox, styles.assignedBox]}
-                onPress={() => router.push("/assigned-services")}
-              >
-                <Text style={styles.summaryTitle}>Assigned</Text>
-                <Text style={[styles.summaryCount, { color: "#f97316" }]}>
-                  {assignedCount}
-                </Text>
-              </TouchableOpacity>
+                        {/* DUTY HOURS SUMMARY */}
+                        <View style={styles.dutyHoursRow}>
+                            <View style={styles.dutyHoursBox}>
+                                <Text style={styles.dutyHoursTitle}>Today</Text>
+                                <Text style={styles.dutyHoursValue}>
+                                    {formatMinutesToHours(todayDutyMinutes)}
+                                </Text>
+                            </View>
 
-              <TouchableOpacity
-                style={[styles.summaryBox, styles.completedBox]}
-                onPress={() => router.push("/dashboard")}
-              >
-                <Text style={styles.summaryTitle}>Completed</Text>
-                <Text style={[styles.summaryCount, { color: "#16a34a" }]}>
-                  {completedCount}
-                </Text>
-              </TouchableOpacity>
+                            <View style={styles.dutyHoursBox}>
+                                <Text style={styles.dutyHoursTitle}>Weekly</Text>
+                                <Text style={styles.dutyHoursValue}>
+                                    {formatMinutesToHours(weeklyDutyMinutes)}
+                                </Text>
+                            </View>
 
-              <TouchableOpacity
-                style={[styles.summaryBox, styles.cancelledBox]}
-                onPress={() => router.push("/cancellations")}
-              >
-                <Text style={styles.summaryTitle}>Cancelled</Text>
-                <Text style={[styles.summaryCount, { color: "#ef4444" }]}>
-                  {cancelledCount}
-                </Text>
-              </TouchableOpacity>
-            </View>
+                            <View style={styles.dutyHoursBox}>
+                                <Text style={styles.dutyHoursTitle}>Monthly</Text>
+                                <Text style={styles.dutyHoursValue}>
+                                    {formatMinutesToHours(monthlyDutyMinutes)}
+                                </Text>
+                            </View>
+                        </View>
 
-            {/* VIEW ZONE MAP BUTTON */}
-            {/* <View style={{ marginHorizontal: 16, marginTop: 12 }}>
+
+                        {/* SERVICE SUMMARY */}
+                        <View style={styles.sectionHeaderWithSubRow}>
+                            <Text style={styles.sectionHeaderText}>Service Summary</Text>
+                            <Text style={styles.sectionSubHeaderText}>Tap box to view</Text>
+                        </View>
+
+                        <View style={styles.summaryRow}>
+                            <TouchableOpacity
+                                style={[styles.summaryBox, styles.assignedBox]}
+                                onPress={() => router.push("/assigned-services")}
+                            >
+                                <Text style={styles.summaryTitle}>Assigned</Text>
+                                <Text style={[styles.summaryCount, { color: "#f97316" }]}>
+                                    {assignedCount}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.summaryBox, styles.completedBox]}
+                                onPress={() => router.push("/dashboard")}
+                            >
+                                <Text style={styles.summaryTitle}>Completed</Text>
+                                <Text style={[styles.summaryCount, { color: "#16a34a" }]}>
+                                    {completedCount}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.summaryBox, styles.cancelledBox]}
+                                onPress={() => router.push("/cancellations")}
+                            >
+                                <Text style={styles.summaryTitle}>Cancelled</Text>
+                                <Text style={[styles.summaryCount, { color: "#ef4444" }]}>
+                                    {cancelledCount}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* VIEW ZONE MAP BUTTON */}
+                        {/* <View style={{ marginHorizontal: 16, marginTop: 12 }}>
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: '#0284c7' }]}
                 onPress={openZoneMap}
@@ -12781,11 +12780,11 @@ export default function MyRoleScreen() {
                 <Text style={[styles.primaryBtnText, { color: '#fff' }]}>🗺️ VIEW ZONE MAP</Text>
               </TouchableOpacity>
             </View> */}
-          </View>
-        )}
-      />
+                    </View>
+                )}
+            />
 
-      {/* FOOTER */}
+            {/* FOOTER
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.footerItem}
@@ -12840,1083 +12839,1083 @@ export default function MyRoleScreen() {
             Profile
           </Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
-      {/* DUTY MODAL */}
-      <Modal visible={dutyModalVisible} transparent animationType="fade">
-        <View style={styles.dutyModalOverlay}>
-          <View style={styles.dutyModalCard}>
-            <View style={styles.dutyIconCircle}>
-              <Ionicons
-                name={targetDutyValue ? "power" : "power-outline"}
-                size={30}
-                color={targetDutyValue ? "#16a34a" : "#dc2626"}
-              />
-            </View>
+            {/* DUTY MODAL */}
+            <Modal visible={dutyModalVisible} transparent animationType="fade">
+                <View style={styles.dutyModalOverlay}>
+                    <View style={styles.dutyModalCard}>
+                        <View style={styles.dutyIconCircle}>
+                            <Ionicons
+                                name={targetDutyValue ? "power" : "power-outline"}
+                                size={30}
+                                color={targetDutyValue ? "#16a34a" : "#dc2626"}
+                            />
+                        </View>
 
-            <Text style={styles.dutyModalTitle}>
-              {targetDutyValue ? "Go ON-DUTY?" : "Go OFF-DUTY?"}
-            </Text>
-            <Text style={styles.dutyModalMessage}>
-              {targetDutyValue
-                ? "Are you sure you want to go ON-DUTY?"
-                : "Are you sure you want to go OFF-DUTY?"}
-            </Text>
+                        <Text style={styles.dutyModalTitle}>
+                            {targetDutyValue ? "Go ON-DUTY?" : "Go OFF-DUTY?"}
+                        </Text>
+                        <Text style={styles.dutyModalMessage}>
+                            {targetDutyValue
+                                ? "Are you sure you want to go ON-DUTY?"
+                                : "Are you sure you want to go OFF-DUTY?"}
+                        </Text>
 
-            <View style={styles.dutyButtonRow}>
-              <TouchableOpacity
-                style={styles.dutyCancelBtn}
-                onPress={() => setDutyModalVisible(false)}
-              >
-                <Text style={styles.dutyCancelText}>Cancel</Text>
-              </TouchableOpacity>
+                        <View style={styles.dutyButtonRow}>
+                            <TouchableOpacity
+                                style={styles.dutyCancelBtn}
+                                onPress={() => setDutyModalVisible(false)}
+                            >
+                                <Text style={styles.dutyCancelText}>Cancel</Text>
+                            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.dutyConfirmBtn}
-                onPress={confirmDutyChange}
-              >
-                <Text style={styles.dutyConfirmText}>Confirm</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* CUSTOMER CARE MODAL */}
-      <Modal visible={customerCareModalVisible} transparent animationType="fade">
-        <View style={styles.dutyModalOverlay}>
-          <View style={styles.dutyModalCard}>
-            <View style={styles.dutyIconCircle}>
-              <Ionicons name="headset" size={30} color="#000" />
-            </View>
-
-            <Text style={styles.dutyModalTitle}>Customer Care 🎧</Text>
-            <Text style={styles.dutyModalMessage}>+91 7617618567</Text>
-
-            <View style={styles.dutyButtonRow}>
-              <TouchableOpacity
-                style={styles.dutyCancelBtn}
-                onPress={() => setCustomerCareModalVisible(false)}
-              >
-                <Text style={styles.dutyCancelText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.dutyConfirmBtn}
-                onPress={() => {
-                  setCustomerCareModalVisible(false);
-                  Linking.openURL("tel:+917617618567");
-                }}
-              >
-                <Text style={styles.dutyConfirmText}>Call</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* LOCATION LOADING MODAL */}
-      <Modal visible={locationLoading} transparent animationType="fade">
-        <View style={styles.dutyModalOverlay}>
-          <View style={styles.dutyModalCard}>
-            <ActivityIndicator size="large" color="#FFD700" style={{ marginBottom: 16 }} />
-            <Text style={styles.dutyModalTitle}>Fetching Location... 📍</Text>
-            <Text style={styles.dutyModalMessage}>
-              Getting your live GPS location and verifying your assigned zone boundary...
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
-      {/* OUT OF BOUNDS MODAL */}
-      <Modal
-        visible={outOfBoundsModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOutOfBoundsModalVisible(false)}
-      >
-        <View style={styles.boundsModalOverlay}>
-          <View style={styles.boundsModalCard}>
-            <View style={styles.boundsIconCircle}>
-              <Ionicons name="warning" size={32} color="#D97706" />
-            </View>
-
-            <Text style={styles.boundsModalTitle}>Out of Bounds Alert! 🚨</Text>
-            <Text style={styles.boundsModalMessage}>
-              You are currently outside your assigned zone ({assignedHubName || "Assigned Zone"}).
-              Please move inside your zone to receive and complete customer bookings.
-            </Text>
-
-            <View style={styles.boundsButtonColumn}>
-              <TouchableOpacity
-                style={styles.boundsPrimaryBtn}
-                onPress={() => {
-                  setOutOfBoundsModalVisible(false);
-                  openZoneMap();
-                }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="map-outline" size={20} color="#000" />
-                <Text style={styles.boundsPrimaryBtnText}>View Zone Map 📍</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.boundsDismissBtn}
-                onPress={() => setOutOfBoundsModalVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.boundsDismissText}>Dismiss</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* LOCATION DISCLOSURE MODAL */}
-      <LocationDisclosureModal
-        visible={locationDisclosureVisible}
-        onContinue={handleLocationDisclosureContinue}
-        onCancel={handleLocationDisclosureCancel}
-      />
-
-      {/* DRAGGABLE FLOATING ZONE MAP BUTTON */}
-      <Animated.View
-        style={[
-          styles.draggableContainer,
-          {
-            transform: [{ translateX: pan.x }, { translateY: pan.y }],
-          },
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <TouchableOpacity
-          style={[
-            styles.floatingZoneBtn,
-            { backgroundColor: isOutOfZone ? "#ef4444" : "#16a34a" },
-          ]}
-          onPress={openZoneMap}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="map" size={24} color="#ffffff" />
-          <Text style={styles.floatingBtnText}>
-            {isOutOfZone ? "OUT OF BOUNDS" : "IN ZONE"}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* ZONE MAP OVERLAY MODAL */}
-      <Modal visible={zoneModalVisible} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-          {/* HEADER */}
-          <View style={styles.zoneModalHeader}>
-            <TouchableOpacity
-              style={styles.zoneBackBtn}
-              onPress={() => setZoneModalVisible(false)}
-            >
-              <Ionicons name="arrow-back" size={24} color="#000" />
-            </TouchableOpacity>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.zoneModalHeaderTitle}>
-                My Zone: {assignedHubName}
-              </Text>
-              <Text style={styles.zoneModalHeaderSub} numberOfLines={1}>
-                {assignedLocationsStr || "Fetching assigned hub..."}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.zoneHeaderStatusPill,
-                { backgroundColor: isOutOfZone ? "#fee2e2" : "#dcfce7" },
-              ]}
-            >
-              <Text
-                style={{
-                  color: isOutOfZone ? "#dc2626" : "#16a34a",
-                  fontWeight: "800",
-                  fontSize: 12,
-                }}
-              >
-                {isOutOfZone ? "🔴 OUT OF ZONE" : "🟢 IN ZONE"}
-              </Text>
-            </View>
-          </View>
-
-          {/* MAP VIEW */}
-          <View style={{ flex: 1 }}>
-            <MapView
-              ref={zoneMapRef}
-              style={{ flex: 1 }}
-              initialRegion={{
-                latitude: currentCoords?.latitude ?? 
-                  (hubSubLocations.length > 0 ? hubSubLocations[0]?.latitude ?? 17.3850 : 17.3850),
-                longitude: currentCoords?.longitude ?? 
-                  (hubSubLocations.length > 0 ? hubSubLocations[0]?.longitude ?? 78.4867 : 78.4867),
-                latitudeDelta: 0.08,
-                longitudeDelta: 0.08,
-              }}
-            >
-              {/* DOTTED LINE TO ZONE */}
-              {isOutOfZone && currentCoords && hubSubLocations.length > 0 && 
-               hubSubLocations.some(s => s.latitude && s.longitude) && (
-                <Polyline
-                  coordinates={[
-                    {
-                      latitude: currentCoords.latitude,
-                      longitude: currentCoords.longitude,
-                    },
-                    {
-                      latitude: (() => {
-                        const nearest = hubSubLocations.find(s => s.latitude && s.longitude);
-                        return nearest?.latitude ?? currentCoords.latitude;
-                      })(),
-                      longitude: (() => {
-                        const nearest = hubSubLocations.find(s => s.latitude && s.longitude);
-                        return nearest?.longitude ?? currentCoords.longitude;
-                      })(),
-                    },
-                  ]}
-                  strokeColor="#0284c7"
-                  strokeWidth={4}
-                  lineDashPattern={[8, 8]}
-                />
-              )}
-
-              {/* LIVE LOCATION MARKER */}
-              {currentCoords &&
-                typeof currentCoords.latitude === "number" &&
-                Number.isFinite(currentCoords.latitude) &&
-                typeof currentCoords.longitude === "number" &&
-                Number.isFinite(currentCoords.longitude) && (
-                  <Marker
-                    coordinate={{
-                      latitude: currentCoords.latitude,
-                      longitude: currentCoords.longitude,
-                    }}
-                    title="My Live Location"
-                    description={currentAreaName || "Your current position"}
-                  />
-                )}
-
-              {/* HUB CENTER MARKER */}
-              {assignedHubCoords && (
-                <Marker
-                  coordinate={assignedHubCoords}
-                  title={assignedHubName || "Hub Center"}
-                  description="Hub Center"
-                  pinColor="#FFD700"
-                />
-              )}
-
-              {/* PINCODE BOUNDARY POLYGONS */}
-              {(() => {
-                let allPincodeBoundaryPoints: Array<{
-                  latitude: number;
-                  longitude: number;
-                }> = [];
-
-                const validSubs = hubSubLocations.filter(
-                  (sub) =>
-                    sub.latitude !== undefined &&
-                    sub.longitude !== undefined &&
-                    Number.isFinite(sub.latitude) &&
-                    Number.isFinite(sub.longitude)
-                );
-
-                if (validSubs.length === 0) {
-                  return null;
-                }
-
-                return (
-                  <>
-                    {validSubs.map((sub, idx) => {
-                      const pincodePolyCoords = generatePincodeBoundaryPoints(
-                        sub.latitude!,
-                        sub.longitude!,
-                        1.2
-                      );
-
-                      const validPolyCoords = pincodePolyCoords.filter(
-                        (pt) =>
-                          pt &&
-                          typeof pt.latitude === "number" &&
-                          Number.isFinite(pt.latitude) &&
-                          typeof pt.longitude === "number" &&
-                          Number.isFinite(pt.longitude)
-                      );
-
-                      if (validPolyCoords.length < 3) return null;
-
-                      allPincodeBoundaryPoints = allPincodeBoundaryPoints.concat(validPolyCoords);
-
-                      return (
-                        <Polygon
-                          key={`sub-poly-${idx}`}
-                          coordinates={validPolyCoords}
-                          strokeColor="#0284c7"
-                          strokeWidth={2}
-                          fillColor="rgba(2, 132, 199, 0.15)"
-                          tappable={true}
-                          onPress={() => {
-                            setSelectedPincodeInfo(
-                              `${sub.location_name || 'Location'}${sub.pincode ? ` (${sub.pincode})` : ''}`
-                            );
-                          }}
-                        />
-                      );
-                    })}
-
-                    {/* MASTER HUB BOUNDARY */}
-                    {(() => {
-                      if (allPincodeBoundaryPoints.length < 3) return null;
-                      
-                      const masterHubHullCoords = getConvexHullCoordinates(allPincodeBoundaryPoints);
-                      const validHullCoords = masterHubHullCoords.filter(
-                        (pt) =>
-                          pt &&
-                          typeof pt.latitude === "number" &&
-                          Number.isFinite(pt.latitude) &&
-                          typeof pt.longitude === "number" &&
-                          Number.isFinite(pt.longitude)
-                      );
-
-                      if (validHullCoords.length < 3) return null;
-
-                      return (
-                        <Polygon
-                          coordinates={validHullCoords}
-                          strokeColor="#FFD700"
-                          strokeWidth={4}
-                          fillColor="rgba(255, 215, 0, 0.10)"
-                          tappable={true}
-                          onPress={() => {
-                            setSelectedPincodeInfo(`Hub Zone: ${assignedHubName}`);
-                          }}
-                        />
-                      );
-                    })()}
-                  </>
-                );
-              })()}
-            </MapView>
-
-            {/* PINCODE INFO CALLOUT */}
-            {selectedPincodeInfo && (
-              <View style={styles.pincodeInfoCallout}>
-                <Ionicons name="location-sharp" size={18} color="#0284c7" />
-                <Text style={styles.pincodeInfoCalloutText}>
-                  {selectedPincodeInfo}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setSelectedPincodeInfo(null)}
-                  style={{ marginLeft: 6 }}
-                >
-                  <Ionicons name="close-circle" size={20} color="#64748b" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* OUT OF ZONE ALERT BANNER */}
-            {isOutOfZone && (
-              <View style={styles.zoneAlertBanner}>
-                <Ionicons name="warning" size={24} color="#dc2626" />
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.zoneAlertBannerTitle}>
-                    Zone Boundary Crossed!
-                  </Text>
-                  <Text style={styles.zoneAlertBannerMessage}>
-                    You are outside your assigned hub zone ({assignedHubName}).
-                  </Text>
+                            <TouchableOpacity
+                                style={styles.dutyConfirmBtn}
+                                onPress={confirmDutyChange}
+                            >
+                                <Text style={styles.dutyConfirmText}>Confirm</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
-              </View>
-            )}
+            </Modal>
 
-            {/* BOTTOM CARD */}
-            <View style={styles.zoneBottomCard}>
-              <View style={{ marginBottom: 8 }}>
-                <Text style={styles.zoneCardLabel}>ASSIGNED SERVICE ZONE & PINCODES</Text>
-                <Text style={styles.zoneCardHubName}>{assignedHubName}</Text>
-                <ScrollView
-                  style={styles.pincodesScrollView}
-                  nestedScrollEnabled={true}
-                  showsVerticalScrollIndicator={true}
+            {/* CUSTOMER CARE MODAL */}
+            <Modal visible={customerCareModalVisible} transparent animationType="fade">
+                <View style={styles.dutyModalOverlay}>
+                    <View style={styles.dutyModalCard}>
+                        <View style={styles.dutyIconCircle}>
+                            <Ionicons name="headset" size={30} color="#000" />
+                        </View>
+
+                        <Text style={styles.dutyModalTitle}>Customer Care 🎧</Text>
+                        <Text style={styles.dutyModalMessage}>+91 7617618567</Text>
+
+                        <View style={styles.dutyButtonRow}>
+                            <TouchableOpacity
+                                style={styles.dutyCancelBtn}
+                                onPress={() => setCustomerCareModalVisible(false)}
+                            >
+                                <Text style={styles.dutyCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.dutyConfirmBtn}
+                                onPress={() => {
+                                    setCustomerCareModalVisible(false);
+                                    Linking.openURL("tel:+917617618567");
+                                }}
+                            >
+                                <Text style={styles.dutyConfirmText}>Call</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* LOCATION LOADING MODAL */}
+            <Modal visible={locationLoading} transparent animationType="fade">
+                <View style={styles.dutyModalOverlay}>
+                    <View style={styles.dutyModalCard}>
+                        <ActivityIndicator size="large" color="#FFD700" style={{ marginBottom: 16 }} />
+                        <Text style={styles.dutyModalTitle}>Fetching Location... 📍</Text>
+                        <Text style={styles.dutyModalMessage}>
+                            Getting your live GPS location and verifying your assigned zone boundary...
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* OUT OF BOUNDS MODAL */}
+            <Modal
+                visible={outOfBoundsModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setOutOfBoundsModalVisible(false)}
+            >
+                <View style={styles.boundsModalOverlay}>
+                    <View style={styles.boundsModalCard}>
+                        <View style={styles.boundsIconCircle}>
+                            <Ionicons name="warning" size={32} color="#D97706" />
+                        </View>
+
+                        <Text style={styles.boundsModalTitle}>Out of Bounds Alert! 🚨</Text>
+                        <Text style={styles.boundsModalMessage}>
+                            You are currently outside your assigned zone ({assignedHubName || "Assigned Zone"}).
+                            Please move inside your zone to receive and complete customer bookings.
+                        </Text>
+
+                        <View style={styles.boundsButtonColumn}>
+                            <TouchableOpacity
+                                style={styles.boundsPrimaryBtn}
+                                onPress={() => {
+                                    setOutOfBoundsModalVisible(false);
+                                    openZoneMap();
+                                }}
+                                activeOpacity={0.85}
+                            >
+                                <Ionicons name="map-outline" size={20} color="#000" />
+                                <Text style={styles.boundsPrimaryBtnText}>View Zone Map 📍</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.boundsDismissBtn}
+                                onPress={() => setOutOfBoundsModalVisible(false)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.boundsDismissText}>Dismiss</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* LOCATION DISCLOSURE MODAL */}
+            <LocationDisclosureModal
+                visible={locationDisclosureVisible}
+                onContinue={handleLocationDisclosureContinue}
+                onCancel={handleLocationDisclosureCancel}
+            />
+
+            {/* DRAGGABLE FLOATING ZONE MAP BUTTON */}
+            <Animated.View
+                style={[
+                    styles.draggableContainer,
+                    {
+                        transform: [{ translateX: pan.x }, { translateY: pan.y }],
+                    },
+                ]}
+                {...panResponder.panHandlers}
+            >
+                <TouchableOpacity
+                    style={[
+                        styles.floatingZoneBtn,
+                        { backgroundColor: isOutOfZone ? "#ef4444" : "#16a34a" },
+                    ]}
+                    onPress={openZoneMap}
+                    activeOpacity={0.8}
                 >
-                  <Text style={styles.zoneCardLocations}>
-                    {hubSubLocations.length > 0
-                      ? hubSubLocations
-                          .map(
-                            (item) =>
-                              `${item.location_name}${item.pincode ? " (" + item.pincode + ")" : ""}`
-                          )
-                          .join(" • ")
-                      : assignedLocationsStr || "Hub Area: " + assignedHubName}
-                  </Text>
-                </ScrollView>
-              </View>
+                    <Ionicons name="map" size={24} color="#ffffff" />
+                    <Text style={styles.floatingBtnText}>
+                        {isOutOfZone ? "OUT OF BOUNDS" : "IN ZONE"}
+                    </Text>
+                </TouchableOpacity>
+            </Animated.View>
 
-              <TouchableOpacity
-                style={styles.navigateBtn}
-                onPress={handleNavigateToZone}
-              >
-                <Ionicons name="navigate-sharp" size={20} color="#000000" />
-                <Text style={styles.navigateBtnText}>
-                  Join Work Zone & Navigate
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            {/* ZONE MAP OVERLAY MODAL */}
+            <Modal visible={zoneModalVisible} animationType="slide" transparent={false}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+                    {/* HEADER */}
+                    <View style={styles.zoneModalHeader}>
+                        <TouchableOpacity
+                            style={styles.zoneBackBtn}
+                            onPress={() => setZoneModalVisible(false)}
+                        >
+                            <Ionicons name="arrow-back" size={24} color="#000" />
+                        </TouchableOpacity>
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <Text style={styles.zoneModalHeaderTitle}>
+                                My Zone: {assignedHubName}
+                            </Text>
+                            <Text style={styles.zoneModalHeaderSub} numberOfLines={1}>
+                                {assignedLocationsStr || "Fetching assigned hub..."}
+                            </Text>
+                        </View>
+                        <View
+                            style={[
+                                styles.zoneHeaderStatusPill,
+                                { backgroundColor: isOutOfZone ? "#fee2e2" : "#dcfce7" },
+                            ]}
+                        >
+                            <Text
+                                style={{
+                                    color: isOutOfZone ? "#dc2626" : "#16a34a",
+                                    fontWeight: "800",
+                                    fontSize: 12,
+                                }}
+                            >
+                                {isOutOfZone ? "🔴 OUT OF ZONE" : "🟢 IN ZONE"}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* MAP VIEW */}
+                    <View style={{ flex: 1 }}>
+                        <MapView
+                            ref={zoneMapRef}
+                            style={{ flex: 1 }}
+                            initialRegion={{
+                                latitude: currentCoords?.latitude ??
+                                    (hubSubLocations.length > 0 ? hubSubLocations[0]?.latitude ?? 17.3850 : 17.3850),
+                                longitude: currentCoords?.longitude ??
+                                    (hubSubLocations.length > 0 ? hubSubLocations[0]?.longitude ?? 78.4867 : 78.4867),
+                                latitudeDelta: 0.08,
+                                longitudeDelta: 0.08,
+                            }}
+                        >
+                            {/* DOTTED LINE TO ZONE */}
+                            {isOutOfZone && currentCoords && hubSubLocations.length > 0 &&
+                                hubSubLocations.some(s => s.latitude && s.longitude) && (
+                                    <Polyline
+                                        coordinates={[
+                                            {
+                                                latitude: currentCoords.latitude,
+                                                longitude: currentCoords.longitude,
+                                            },
+                                            {
+                                                latitude: (() => {
+                                                    const nearest = hubSubLocations.find(s => s.latitude && s.longitude);
+                                                    return nearest?.latitude ?? currentCoords.latitude;
+                                                })(),
+                                                longitude: (() => {
+                                                    const nearest = hubSubLocations.find(s => s.latitude && s.longitude);
+                                                    return nearest?.longitude ?? currentCoords.longitude;
+                                                })(),
+                                            },
+                                        ]}
+                                        strokeColor="#0284c7"
+                                        strokeWidth={4}
+                                        lineDashPattern={[8, 8]}
+                                    />
+                                )}
+
+                            {/* LIVE LOCATION MARKER */}
+                            {currentCoords &&
+                                typeof currentCoords.latitude === "number" &&
+                                Number.isFinite(currentCoords.latitude) &&
+                                typeof currentCoords.longitude === "number" &&
+                                Number.isFinite(currentCoords.longitude) && (
+                                    <Marker
+                                        coordinate={{
+                                            latitude: currentCoords.latitude,
+                                            longitude: currentCoords.longitude,
+                                        }}
+                                        title="My Live Location"
+                                        description={currentAreaName || "Your current position"}
+                                    />
+                                )}
+
+                            {/* HUB CENTER MARKER */}
+                            {assignedHubCoords && (
+                                <Marker
+                                    coordinate={assignedHubCoords}
+                                    title={assignedHubName || "Hub Center"}
+                                    description="Hub Center"
+                                    pinColor="#FFD700"
+                                />
+                            )}
+
+                            {/* PINCODE BOUNDARY POLYGONS */}
+                            {(() => {
+                                let allPincodeBoundaryPoints: Array<{
+                                    latitude: number;
+                                    longitude: number;
+                                }> = [];
+
+                                const validSubs = hubSubLocations.filter(
+                                    (sub) =>
+                                        sub.latitude !== undefined &&
+                                        sub.longitude !== undefined &&
+                                        Number.isFinite(sub.latitude) &&
+                                        Number.isFinite(sub.longitude)
+                                );
+
+                                if (validSubs.length === 0) {
+                                    return null;
+                                }
+
+                                return (
+                                    <>
+                                        {validSubs.map((sub, idx) => {
+                                            const pincodePolyCoords = generatePincodeBoundaryPoints(
+                                                sub.latitude!,
+                                                sub.longitude!,
+                                                1.2
+                                            );
+
+                                            const validPolyCoords = pincodePolyCoords.filter(
+                                                (pt) =>
+                                                    pt &&
+                                                    typeof pt.latitude === "number" &&
+                                                    Number.isFinite(pt.latitude) &&
+                                                    typeof pt.longitude === "number" &&
+                                                    Number.isFinite(pt.longitude)
+                                            );
+
+                                            if (validPolyCoords.length < 3) return null;
+
+                                            allPincodeBoundaryPoints = allPincodeBoundaryPoints.concat(validPolyCoords);
+
+                                            return (
+                                                <Polygon
+                                                    key={`sub-poly-${idx}`}
+                                                    coordinates={validPolyCoords}
+                                                    strokeColor="#0284c7"
+                                                    strokeWidth={2}
+                                                    fillColor="rgba(2, 132, 199, 0.15)"
+                                                    tappable={true}
+                                                    onPress={() => {
+                                                        setSelectedPincodeInfo(
+                                                            `${sub.location_name || 'Location'}${sub.pincode ? ` (${sub.pincode})` : ''}`
+                                                        );
+                                                    }}
+                                                />
+                                            );
+                                        })}
+
+                                        {/* MASTER HUB BOUNDARY */}
+                                        {(() => {
+                                            if (allPincodeBoundaryPoints.length < 3) return null;
+
+                                            const masterHubHullCoords = getConvexHullCoordinates(allPincodeBoundaryPoints);
+                                            const validHullCoords = masterHubHullCoords.filter(
+                                                (pt) =>
+                                                    pt &&
+                                                    typeof pt.latitude === "number" &&
+                                                    Number.isFinite(pt.latitude) &&
+                                                    typeof pt.longitude === "number" &&
+                                                    Number.isFinite(pt.longitude)
+                                            );
+
+                                            if (validHullCoords.length < 3) return null;
+
+                                            return (
+                                                <Polygon
+                                                    coordinates={validHullCoords}
+                                                    strokeColor="#FFD700"
+                                                    strokeWidth={4}
+                                                    fillColor="rgba(255, 215, 0, 0.10)"
+                                                    tappable={true}
+                                                    onPress={() => {
+                                                        setSelectedPincodeInfo(`Hub Zone: ${assignedHubName}`);
+                                                    }}
+                                                />
+                                            );
+                                        })()}
+                                    </>
+                                );
+                            })()}
+                        </MapView>
+
+                        {/* PINCODE INFO CALLOUT */}
+                        {selectedPincodeInfo && (
+                            <View style={styles.pincodeInfoCallout}>
+                                <Ionicons name="location-sharp" size={18} color="#0284c7" />
+                                <Text style={styles.pincodeInfoCalloutText}>
+                                    {selectedPincodeInfo}
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setSelectedPincodeInfo(null)}
+                                    style={{ marginLeft: 6 }}
+                                >
+                                    <Ionicons name="close-circle" size={20} color="#64748b" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* OUT OF ZONE ALERT BANNER */}
+                        {isOutOfZone && (
+                            <View style={styles.zoneAlertBanner}>
+                                <Ionicons name="warning" size={24} color="#dc2626" />
+                                <View style={{ flex: 1, marginLeft: 8 }}>
+                                    <Text style={styles.zoneAlertBannerTitle}>
+                                        Zone Boundary Crossed!
+                                    </Text>
+                                    <Text style={styles.zoneAlertBannerMessage}>
+                                        You are outside your assigned hub zone ({assignedHubName}).
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* BOTTOM CARD */}
+                        <View style={styles.zoneBottomCard}>
+                            <View style={{ marginBottom: 8 }}>
+                                <Text style={styles.zoneCardLabel}>ASSIGNED SERVICE ZONE & PINCODES</Text>
+                                <Text style={styles.zoneCardHubName}>{assignedHubName}</Text>
+                                <ScrollView
+                                    style={styles.pincodesScrollView}
+                                    nestedScrollEnabled={true}
+                                    showsVerticalScrollIndicator={true}
+                                >
+                                    <Text style={styles.zoneCardLocations}>
+                                        {hubSubLocations.length > 0
+                                            ? hubSubLocations
+                                                .map(
+                                                    (item) =>
+                                                        `${item.location_name}${item.pincode ? " (" + item.pincode + ")" : ""}`
+                                                )
+                                                .join(" • ")
+                                            : assignedLocationsStr || "Hub Area: " + assignedHubName}
+                                    </Text>
+                                </ScrollView>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.navigateBtn}
+                                onPress={handleNavigateToZone}
+                            >
+                                <Ionicons name="navigate-sharp" size={20} color="#000000" />
+                                <Text style={styles.navigateBtnText}>
+                                    Join Work Zone & Navigate
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </Modal>
+
+            {/* LOGOUT MODAL */}
+            <Modal
+                visible={showLogoutModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowLogoutModal(false)}
+            >
+                <View style={styles.dutyModalOverlay}>
+                    <View style={styles.dutyModalCard}>
+                        <View style={styles.iconCircleRedCenter}>
+                            <Ionicons name="help-circle" size={32} color="#ef4444" />
+                        </View>
+                        <Text style={styles.dutyModalTitle}>Confirm Logout</Text>
+                        <Text style={styles.dutyModalMessage}>Do you want to logout?</Text>
+
+                        <View style={styles.modalInfoBoxRed}>
+                            <Text style={styles.modalInfoBoxTextRed}>
+                                ⚠️ You will be signed out of your account. You will need to log in again to
+                                access your partner dashboard.
+                            </Text>
+                        </View>
+
+                        <View style={styles.dutyButtonRow}>
+                            <TouchableOpacity
+                                style={styles.dutyCancelBtn}
+                                onPress={() => setShowLogoutModal(false)}
+                            >
+                                <Text style={styles.dutyCancelText}>No, Go Back</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.modalDangerBtn}
+                                disabled={loadingLogout}
+                                onPress={confirmLogoutAction}
+                            >
+                                {loadingLogout ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.modalDangerBtnText}>Yes, Logout</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
-      </Modal>
-
-      {/* LOGOUT MODAL */}
-      <Modal
-        visible={showLogoutModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLogoutModal(false)}
-      >
-        <View style={styles.dutyModalOverlay}>
-          <View style={styles.dutyModalCard}>
-            <View style={styles.iconCircleRedCenter}>
-              <Ionicons name="help-circle" size={32} color="#ef4444" />
-            </View>
-            <Text style={styles.dutyModalTitle}>Confirm Logout</Text>
-            <Text style={styles.dutyModalMessage}>Do you want to logout?</Text>
-
-            <View style={styles.modalInfoBoxRed}>
-              <Text style={styles.modalInfoBoxTextRed}>
-                ⚠️ You will be signed out of your account. You will need to log in again to
-                access your partner dashboard.
-              </Text>
-            </View>
-
-            <View style={styles.dutyButtonRow}>
-              <TouchableOpacity
-                style={styles.dutyCancelBtn}
-                onPress={() => setShowLogoutModal(false)}
-              >
-                <Text style={styles.dutyCancelText}>No, Go Back</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalDangerBtn}
-                disabled={loadingLogout}
-                onPress={confirmLogoutAction}
-              >
-                {loadingLogout ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.modalDangerBtnText}>Yes, Logout</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
-  );
+    );
 }
 
 // ============================================================
 // STYLES
 // ============================================================
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#fff" },
-  header: {
-    height: 72,
-    paddingHorizontal: 20,
-    backgroundColor: "#ffffff",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 14 },
-  logo: { width: 190, height: 64 },
-  bellIcon: { position: "relative" },
-  badge: {
-    position: "absolute",
-    top: -6,
-    right: -10,
-    backgroundColor: "#000",
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { color: "#FFD700", fontWeight: "800", fontSize: 12 },
+    container: { backgroundColor: "#fff" },
+    header: {
+        height: 72,
+        paddingHorizontal: 20,
+        backgroundColor: "#ffffff",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    headerRight: { flexDirection: "row", alignItems: "center", gap: 14 },
+    logo: { width: 190, height: 64 },
+    bellIcon: { position: "relative" },
+    badge: {
+        position: "absolute",
+        top: -6,
+        right: -10,
+        backgroundColor: "#000",
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    badgeText: { color: "#FFD700", fontWeight: "800", fontSize: 12 },
 
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
-  },
+    overlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
+    },
 
-  menu: {
-    position: "absolute",
-    top: 72,
-    right: 20,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    elevation: 6,
-    width: 150,
-    zIndex: 20,
-  },
+    menu: {
+        position: "absolute",
+        top: 72,
+        right: 20,
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        elevation: 6,
+        width: 150,
+        zIndex: 20,
+    },
 
-  menuItem: { padding: 14 },
-  menuText: { fontSize: 15, fontWeight: "600" },
+    menuItem: { padding: 14 },
+    menuText: { fontSize: 15, fontWeight: "600" },
 
-  sliderWrapper: {
-    height: SLIDER_HEIGHT,
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 8,
-    borderRadius: 18,
-    overflow: "hidden",
-  },
-  slideImage: { width: width - 32, height: SLIDER_HEIGHT },
+    sliderWrapper: {
+        height: SLIDER_HEIGHT,
+        marginHorizontal: 16,
+        marginTop: 10,
+        marginBottom: 8,
+        borderRadius: 18,
+        overflow: "hidden",
+    },
+    slideImage: { width: width - 32, height: SLIDER_HEIGHT },
 
-  summaryRow: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    gap: 8,
-    marginTop: 6,
-  },
-  summaryBox: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-  },
-  assignedBox: { borderColor: "#f97316" },
-  completedBox: { borderColor: "#16a34a" },
-  cancelledBox: { borderColor: "#ef4444" },
-  summaryTitle: { fontWeight: "600", marginBottom: 6, fontSize: 13 },
-  summaryCount: { fontSize: 18, fontWeight: "800" },
+    summaryRow: {
+        flexDirection: "row",
+        marginHorizontal: 16,
+        gap: 8,
+        marginTop: 6,
+    },
+    summaryBox: {
+        flex: 1,
+        borderRadius: 14,
+        paddingVertical: 10,
+        paddingHorizontal: 6,
+        alignItems: "center",
+        backgroundColor: "#f9fafb",
+        borderWidth: 1,
+    },
+    assignedBox: { borderColor: "#f97316" },
+    completedBox: { borderColor: "#16a34a" },
+    cancelledBox: { borderColor: "#ef4444" },
+    summaryTitle: { fontWeight: "600", marginBottom: 6, fontSize: 13 },
+    summaryCount: { fontSize: 18, fontWeight: "800" },
 
-  availabilityWrapper: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#dae90b",
-  },
-  availabilityText: { fontSize: 16, fontWeight: "700" },
+    availabilityWrapper: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginHorizontal: 16,
+        marginTop: 4,
+        marginBottom: 4,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 14,
+        backgroundColor: "#f9fafb",
+        borderWidth: 1,
+        borderColor: "#dae90b",
+    },
+    availabilityText: { fontSize: 16, fontWeight: "700" },
 
-  primaryBtn: {
-    backgroundColor: "#FFD700",
-    paddingVertical: 14,
-    borderRadius: 18,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  primaryBtnText: { fontWeight: "800", fontSize: 16 },
+    primaryBtn: {
+        backgroundColor: "#FFD700",
+        paddingVertical: 14,
+        borderRadius: 18,
+        alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "center",
+    },
+    primaryBtnText: { fontWeight: "800", fontSize: 16 },
 
-  footer: {
-    height: 70,
-    backgroundColor: "#ffffff",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  footerItem: { alignItems: "center" },
-  footerText: { fontSize: 12, marginTop: 4, fontWeight: "600" },
-  footerTextActive: { fontSize: 12, marginTop: 4, fontWeight: "800" },
+    footer: {
+        height: 70,
+        backgroundColor: "#ffffff",
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+    },
+    footerItem: { alignItems: "center" },
+    footerText: { fontSize: 12, marginTop: 4, fontWeight: "600" },
+    footerTextActive: { fontSize: 12, marginTop: 4, fontWeight: "800" },
 
-  dots: {
-    position: "absolute",
-    bottom: 10,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#ccc",
-    marginHorizontal: 4,
-  },
-  activeDot: {
-    backgroundColor: "#000",
-  },
+    dots: {
+        position: "absolute",
+        bottom: 10,
+        width: "100%",
+        flexDirection: "row",
+        justifyContent: "center",
+    },
+    dot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+        backgroundColor: "#ccc",
+        marginHorizontal: 4,
+    },
+    activeDot: {
+        backgroundColor: "#000",
+    },
 
-  actionWrapper: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    gap: 10,
-  },
-  actionBtnRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
+    actionWrapper: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        gap: 10,
+    },
+    actionBtnRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 8,
+    },
 
-  dutyModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dutyModalCard: {
-    width: "85%",
-    backgroundColor: "#FFFBEB",
-    borderColor: "#FFD700",
-    borderWidth: 2,
-    borderRadius: 24,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-  },
-  dutyIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#FFF3B0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  dutyModalTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#111827",
-    textAlign: "center",
-  },
-  dutyModalMessage: {
-    fontSize: 15,
-    color: "#4B5563",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 22,
-    fontWeight: "500",
-  },
-  dutyButtonRow: {
-    flexDirection: "row",
-    marginTop: 22,
-    gap: 12,
-    width: "100%",
-  },
-  dutyCancelBtn: {
-    flex: 1,
-    backgroundColor: "#E5E7EB",
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  dutyCancelText: {
-    color: "#374151",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  dutyConfirmBtn: {
-    flex: 1,
-    backgroundColor: "#FFD700",
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  dutyConfirmText: {
-    color: "#000000",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+    dutyModalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    dutyModalCard: {
+        width: "85%",
+        backgroundColor: "#FFFBEB",
+        borderColor: "#FFD700",
+        borderWidth: 2,
+        borderRadius: 24,
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+        alignItems: "center",
+        elevation: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+    },
+    dutyIconCircle: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: "#FFF3B0",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 14,
+    },
+    dutyModalTitle: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#111827",
+        textAlign: "center",
+    },
+    dutyModalMessage: {
+        fontSize: 15,
+        color: "#4B5563",
+        textAlign: "center",
+        marginTop: 8,
+        lineHeight: 22,
+        fontWeight: "500",
+    },
+    dutyButtonRow: {
+        flexDirection: "row",
+        marginTop: 22,
+        gap: 12,
+        width: "100%",
+    },
+    dutyCancelBtn: {
+        flex: 1,
+        backgroundColor: "#E5E7EB",
+        paddingVertical: 12,
+        borderRadius: 14,
+        alignItems: "center",
+    },
+    dutyCancelText: {
+        color: "#374151",
+        fontWeight: "700",
+        fontSize: 15,
+    },
+    dutyConfirmBtn: {
+        flex: 1,
+        backgroundColor: "#FFD700",
+        paddingVertical: 12,
+        borderRadius: 14,
+        alignItems: "center",
+    },
+    dutyConfirmText: {
+        color: "#000000",
+        fontWeight: "800",
+        fontSize: 15,
+    },
 
-  sectionHeaderWrapper: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  sectionHeaderWithSubRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 4,
-  },
-  sectionHeaderText: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  sectionSubHeaderText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6b7280",
-  },
-  dutyHoursRow: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 6,
-  },
-  dutyHoursBox: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1.5,
-    borderColor: "#FFD700",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dutyHoursTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#4b5563",
-    marginBottom: 4,
-  },
-  dutyHoursValue: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
-  },
+    sectionHeaderWrapper: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    sectionHeaderWithSubRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginHorizontal: 16,
+        marginTop: 14,
+        marginBottom: 4,
+    },
+    sectionHeaderText: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#111827",
+    },
+    sectionSubHeaderText: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#6b7280",
+    },
+    dutyHoursRow: {
+        flexDirection: "row",
+        marginHorizontal: 16,
+        gap: 8,
+        marginTop: 4,
+        marginBottom: 6,
+    },
+    dutyHoursBox: {
+        flex: 1,
+        borderRadius: 14,
+        paddingVertical: 10,
+        paddingHorizontal: 6,
+        alignItems: "center",
+        backgroundColor: "#FFFBEB",
+        borderWidth: 1.5,
+        borderColor: "#FFD700",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    dutyHoursTitle: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#4b5563",
+        marginBottom: 4,
+    },
+    dutyHoursValue: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#111827",
+    },
 
-  // Zone Map Styles
-  draggableContainer: {
-    position: "absolute",
-    bottom: 24,
-    right: 20,
-    zIndex: 999,
-    elevation: 10,
-  },
-  floatingZoneBtn: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    borderWidth: 2,
-    borderColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 4,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  floatingBtnText: {
-    color: "#ffffff",
-    fontSize: 9,
-    fontWeight: "900",
-    textAlign: "center",
-    marginTop: 2,
-  },
+    // Zone Map Styles
+    draggableContainer: {
+        position: "absolute",
+        bottom: 24,
+        right: 20,
+        zIndex: 999,
+        elevation: 10,
+    },
+    floatingZoneBtn: {
+        width: 66,
+        height: 66,
+        borderRadius: 33,
+        borderWidth: 2,
+        borderColor: "#ffffff",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 4,
+        elevation: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    floatingBtnText: {
+        color: "#ffffff",
+        fontSize: 9,
+        fontWeight: "900",
+        textAlign: "center",
+        marginTop: 2,
+    },
 
-  zoneModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
-  },
-  zoneBackBtn: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: "#f3f4f6",
-  },
-  zoneModalHeaderTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  zoneModalHeaderSub: {
-    fontSize: 12,
-    color: "#6b7280",
-    fontWeight: "500",
-    marginTop: 1,
-  },
-  zoneHeaderStatusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
+    zoneModalHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e5e7eb",
+        backgroundColor: "#ffffff",
+    },
+    zoneBackBtn: {
+        padding: 6,
+        borderRadius: 20,
+        backgroundColor: "#f3f4f6",
+    },
+    zoneModalHeaderTitle: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#111827",
+    },
+    zoneModalHeaderSub: {
+        fontSize: 12,
+        color: "#6b7280",
+        fontWeight: "500",
+        marginTop: 1,
+    },
+    zoneHeaderStatusPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
 
-  zoneAlertBanner: {
-    position: "absolute",
-    top: 10,
-    left: 16,
-    right: 16,
-    backgroundColor: "#fef2f2",
-    borderWidth: 1.5,
-    borderColor: "#ef4444",
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  zoneAlertBannerTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#991b1b",
-  },
-  zoneAlertBannerMessage: {
-    fontSize: 12,
-    color: "#7f1d1d",
-    marginTop: 2,
-    fontWeight: "500",
-  },
+    zoneAlertBanner: {
+        position: "absolute",
+        top: 10,
+        left: 16,
+        right: 16,
+        backgroundColor: "#fef2f2",
+        borderWidth: 1.5,
+        borderColor: "#ef4444",
+        borderRadius: 14,
+        padding: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        elevation: 4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+    },
+    zoneAlertBannerTitle: {
+        fontSize: 14,
+        fontWeight: "800",
+        color: "#991b1b",
+    },
+    zoneAlertBannerMessage: {
+        fontSize: 12,
+        color: "#7f1d1d",
+        marginTop: 2,
+        fontWeight: "500",
+    },
 
-  zoneBottomCard: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  zoneCardLabel: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#6b7280",
-    letterSpacing: 0.5,
-  },
-  zoneCardHubName: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#111827",
-    marginTop: 2,
-  },
-  pincodesScrollView: {
-    maxHeight: 56,
-    marginVertical: 4,
-  },
-  zoneCardLocations: {
-    fontSize: 13,
-    color: "#4b5563",
-    lineHeight: 18,
-  },
-  navigateBtn: {
-    backgroundColor: "#FFD700",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#000000",
-  },
-  navigateBtnText: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#000000",
-  },
+    zoneBottomCard: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "#ffffff",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 28,
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+    },
+    zoneCardLabel: {
+        fontSize: 11,
+        fontWeight: "800",
+        color: "#6b7280",
+        letterSpacing: 0.5,
+    },
+    zoneCardHubName: {
+        fontSize: 18,
+        fontWeight: "800",
+        color: "#111827",
+        marginTop: 2,
+    },
+    pincodesScrollView: {
+        maxHeight: 56,
+        marginVertical: 4,
+    },
+    zoneCardLocations: {
+        fontSize: 13,
+        color: "#4b5563",
+        lineHeight: 18,
+    },
+    navigateBtn: {
+        backgroundColor: "#FFD700",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 8,
+        paddingVertical: 14,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: "#000000",
+    },
+    navigateBtnText: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#000000",
+    },
 
-  pincodeInfoCallout: {
-    position: "absolute",
-    top: 14,
-    alignSelf: "center",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    borderWidth: 1.5,
-    borderColor: "#0284c7",
-    zIndex: 999,
-  },
-  pincodeInfoCalloutText: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#0f172a",
-  },
+    pincodeInfoCallout: {
+        position: "absolute",
+        top: 14,
+        alignSelf: "center",
+        backgroundColor: "#ffffff",
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        elevation: 6,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        borderWidth: 1.5,
+        borderColor: "#0284c7",
+        zIndex: 999,
+    },
+    pincodeInfoCalloutText: {
+        fontSize: 13,
+        fontWeight: "800",
+        color: "#0f172a",
+    },
 
-  outOfZoneBanner: {
-    backgroundColor: "#ef4444",
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  outOfZoneBannerTitle: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  outOfZoneBannerSub: {
-    color: "#ffffff",
-    fontSize: 12,
-    marginTop: 2,
-  },
+    outOfZoneBanner: {
+        backgroundColor: "#ef4444",
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 14,
+        marginHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 4,
+        borderRadius: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    outOfZoneBannerTitle: {
+        color: "#ffffff",
+        fontWeight: "700",
+        fontSize: 14,
+    },
+    outOfZoneBannerSub: {
+        color: "#ffffff",
+        fontSize: 12,
+        marginTop: 2,
+    },
 
-  boundsModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  boundsModalCard: {
-    width: "100%",
-    backgroundColor: "#FFFBEB",
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: "#FCD34D",
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  boundsIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#FEF3C7",
-    borderWidth: 2,
-    borderColor: "#F59E0B",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  boundsModalTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#78350F",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  boundsModalMessage: {
-    fontSize: 14,
-    color: "#92400E",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 20,
-    paddingHorizontal: 8,
-  },
-  boundsButtonColumn: {
-    width: "100%",
-    gap: 10,
-  },
-  boundsPrimaryBtn: {
-    backgroundColor: "#FFD700",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    gap: 8,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-  },
-  boundsPrimaryBtnText: {
-    color: "#000000",
-    fontWeight: "800",
-    fontSize: 15,
-  },
-  boundsDismissBtn: {
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-  },
-  boundsDismissText: {
-    color: "#78350F",
-    fontWeight: "600",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+    boundsModalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.55)",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    boundsModalCard: {
+        width: "100%",
+        backgroundColor: "#FFFBEB",
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: "#FCD34D",
+        padding: 24,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    boundsIconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: "#FEF3C7",
+        borderWidth: 2,
+        borderColor: "#F59E0B",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    boundsModalTitle: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#78350F",
+        textAlign: "center",
+        marginBottom: 8,
+    },
+    boundsModalMessage: {
+        fontSize: 14,
+        color: "#92400E",
+        textAlign: "center",
+        lineHeight: 20,
+        marginBottom: 20,
+        paddingHorizontal: 8,
+    },
+    boundsButtonColumn: {
+        width: "100%",
+        gap: 10,
+    },
+    boundsPrimaryBtn: {
+        backgroundColor: "#FFD700",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 14,
+        gap: 8,
+        elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+    },
+    boundsPrimaryBtnText: {
+        color: "#000000",
+        fontWeight: "800",
+        fontSize: 15,
+    },
+    boundsDismissBtn: {
+        paddingVertical: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 2,
+    },
+    boundsDismissText: {
+        color: "#78350F",
+        fontWeight: "600",
+        fontSize: 14,
+        textDecorationLine: "underline",
+    },
 
-  iconCircleRedCenter: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "#fee2e2",
-    borderWidth: 1.5,
-    borderColor: "#fca5a5",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalInfoBoxRed: {
-    width: "100%",
-    backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fca5a5",
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 14,
-  },
-  modalInfoBoxTextRed: {
-    fontSize: 13,
-    color: "#991b1b",
-    lineHeight: 18,
-  },
-  modalDangerBtn: {
-    flex: 1,
-    backgroundColor: "#ef4444",
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalDangerBtnText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 15,
-  },
+    iconCircleRedCenter: {
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: "#fee2e2",
+        borderWidth: 1.5,
+        borderColor: "#fca5a5",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    modalInfoBoxRed: {
+        width: "100%",
+        backgroundColor: "#fef2f2",
+        borderWidth: 1,
+        borderColor: "#fca5a5",
+        borderRadius: 14,
+        padding: 14,
+        marginTop: 14,
+    },
+    modalInfoBoxTextRed: {
+        fontSize: 13,
+        color: "#991b1b",
+        lineHeight: 18,
+    },
+    modalDangerBtn: {
+        flex: 1,
+        backgroundColor: "#ef4444",
+        paddingVertical: 12,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    modalDangerBtnText: {
+        color: "#ffffff",
+        fontWeight: "700",
+        fontSize: 15,
+    },
 });

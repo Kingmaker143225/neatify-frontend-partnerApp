@@ -817,7 +817,6 @@ import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   BackHandler,
   KeyboardAvoidingView,
   Modal,
@@ -827,14 +826,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
-  View,
+  TouchableOpacity, useWindowDimensions, View
 } from "react-native";
-import { registerForPushNotificationsAsync } from "./notifications";
+import RenderHtml from "react-native-render-html";
 import { scheduleDailyDutyReminders } from "../lib/dutyReminders";
+import { registerForPushNotificationsAsync } from "./notifications";
 
 // import { supabase } from "../lib/supabase";
-import { authApi } from "../lib/api";
+import { authApi, partnerApi } from "../lib/api";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -854,8 +853,40 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [modalTermsAccepted, setModalTermsAccepted] =
+    useState(false);
+
+  const [modalPrivacyAccepted, setModalPrivacyAccepted] =
+    useState(false);
+
+  const [showConsentModal, setShowConsentModal] =
+    useState(false);
+
+  const [termsAccepted, setTermsAccepted] =
+    useState(false);
+
+  const [privacyAccepted, setPrivacyAccepted] =
+    useState(false);
+
+  const [alreadyAccepted, setAlreadyAccepted] =
+    useState(false);
+
+  const [policyContent, setPolicyContent] =
+    useState("");
+
+  const [termsContent, setTermsContent] =
+    useState("");
+
+  const [showPrivacyModal, setShowPrivacyModal] =
+    useState(false);
+
+  const [showTermsModal, setShowTermsModal] =
+    useState(false);
+
   const [sessionExists, setSessionExists] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+
+  const { width } = useWindowDimensions();
 
   const [loginMode, setLoginMode] = useState<"email" | "mobile">("email");
 
@@ -893,7 +924,29 @@ export default function LoginScreen() {
 
   useEffect(() => {
     checkSession();
+    loadPolicies();
   }, []);
+
+  const loadPolicies = async () => {
+    try {
+      const response =
+        await partnerApi.getPolicies();
+
+      setPolicyContent(
+        response.user_policies || ""
+      );
+
+      setTermsContent(
+        response.terms_and_conditions || ""
+      );
+
+    } catch (error) {
+      console.log(
+        "Failed loading policies",
+        error
+      );
+    }
+  };
 
   // ✅ SAFE TIMER EFFECT (NO TYPESCRIPT ERROR)
   // useEffect(() => {
@@ -951,66 +1004,66 @@ export default function LoginScreen() {
   }, []);
 
   const checkSession = async () => {
-  try {
-    setCheckingSession(true);
-
-    // -------------------------------------------------------
-    // Check whether FastAPI authentication tokens exist
-    // -------------------------------------------------------
-
-    const { getAccessToken } = await import("../lib/api");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setSessionExists(false);
-      return;
-    }
-
-    // -------------------------------------------------------
-    // Validate the token through FastAPI
-    // -------------------------------------------------------
-
     try {
-      const currentUser = await authApi.me();
+      setCheckingSession(true);
 
-      console.log(
-        "✅ Existing backend session:",
-        currentUser.id,
-        currentUser.email,
-      );
+      // -------------------------------------------------------
+      // Check whether FastAPI authentication tokens exist
+      // -------------------------------------------------------
 
-      setSessionExists(true);
+      const { getAccessToken } = await import("../lib/api");
+
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        setSessionExists(false);
+        return;
+      }
+
+      // -------------------------------------------------------
+      // Validate the token through FastAPI
+      // -------------------------------------------------------
+
+      try {
+        const currentUser = await authApi.me();
+
+        console.log(
+          "✅ Existing backend session:",
+          currentUser.id,
+          currentUser.email,
+        );
+
+        setSessionExists(true);
+
+      } catch (error) {
+
+        console.log(
+          "⚠️ Backend session expired or invalid.",
+          error,
+        );
+
+        // Invalid token → clear local authentication
+        const { clearAuthTokens } = await import("../lib/api");
+
+        await clearAuthTokens();
+
+        setSessionExists(false);
+      }
 
     } catch (error) {
 
-      console.log(
-        "⚠️ Backend session expired or invalid.",
+      console.error(
+        "❌ Session check failed:",
         error,
       );
 
-      // Invalid token → clear local authentication
-      const { clearAuthTokens } = await import("../lib/api");
-
-      await clearAuthTokens();
-
       setSessionExists(false);
+
+    } finally {
+
+      setCheckingSession(false);
     }
-
-  } catch (error) {
-
-    console.error(
-      "❌ Session check failed:",
-      error,
-    );
-
-    setSessionExists(false);
-
-  } finally {
-
-    setCheckingSession(false);
-  }
-};
+  };
 
   const isAuthenticatingRef = React.useRef(false);
 
@@ -1036,162 +1089,198 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
 
-  if (!email || !password) {
-    showAlert(
-      "Error",
-      "Email and password required",
-    );
-
-    return;
-  }
-
-
-  setLoading(true);
-
-
-  try {
-
-    // =====================================================
-    // STEP 1
-    // Login THROUGH FastAPI
-    // =====================================================
-
-    const authResponse = await authApi.login(
-      email,
-      password,
-    );
-
-
-    console.log(
-      "✅ FastAPI login successful",
-    );
-
-
-    // =====================================================
-    // STEP 2
-    // Put the tokens into the existing Supabase client
-    //
-    // This does NOT perform the login again.
-    //
-    // It allows the existing Partner App code that still
-    // depends on supabase.auth.getSession()/getUser() to
-    // continue working while we migrate other features
-    // to FastAPI.
-    // =====================================================
-
-    
-
-
-    
-
-
-    // =====================================================
-    // STEP 3
-    // Get authenticated user
-    // =====================================================
-
-    const currentUser =
-      await authApi.me();
-
-
-    console.log(
-      "✅ FastAPI current user:",
-      currentUser.id,
-      currentUser.email,
-    );
-
-
-    // =====================================================
-    // STEP 4
-    // Biometric verification
-    // =====================================================
-
-    const verified =
-      await verifyDeviceSecurity();
-
-
-    if (!verified) {
-
-    try {
-      await authApi.logout();
-    } catch (error) {
-      console.error(
-        "❌ Backend logout after biometric failure:",
-        error,
+    if (!email || !password) {
+      showAlert(
+        "Error",
+        "Email and password required",
       );
+
+      return;
     }
 
-    showAlert(
-      "Verification Failed",
-      "Device authentication failed.",
-    );
 
-    return;
-  }
+    setLoading(true);
 
 
-    // =====================================================
-    // STEP 5
-    // Push notification registration
-    // =====================================================
+    try {
 
-    // =====================================================
-// PUSH NOTIFICATION REGISTRATION
-// =====================================================
+      // =====================================================
+      // STEP 1
+      // Login THROUGH FastAPI
+      // =====================================================
 
-const token =
-  await registerForPushNotificationsAsync();
-
-console.log(
-  "Push Token:",
-  token,
-);
+      const authResponse = await authApi.login(
+        email,
+        password,
+      );
 
 
-    // Keep existing push-token functionality for now.
-    // =====================================================
-// PUSH NOTIFICATION REGISTRATION
-// =====================================================
+      console.log(
+        "✅ FastAPI login successful",
+      );
+
+
+      // =====================================================
+      // STEP 2
+      // Put the tokens into the existing Supabase client
+      //
+      // This does NOT perform the login again.
+      //
+      // It allows the existing Partner App code that still
+      // depends on supabase.auth.getSession()/getUser() to
+      // continue working while we migrate other features
+      // to FastAPI.
+      // =====================================================
 
 
 
 
-    // =====================================================
-    // STEP 6
-    // Existing notification scheduling
-    // =====================================================
-
-    await scheduleDailyDutyReminders();
 
 
-    // =====================================================
-    // STEP 7
-    // Enter Partner App
-    // =====================================================
 
-    router.replace("./my-role");
+      // =====================================================
+      // STEP 3
+      // Get authenticated user
+      // =====================================================
 
-
-  } catch (err: any) {
-
-    console.error(
-      "❌ Backend login error:",
-      err,
-    );
+      const currentUser =
+        await authApi.me();
 
 
-    showAlert(
-      "Login Failed",
-      err?.message ||
+      console.log(
+        "✅ FastAPI current user:",
+        currentUser.id,
+        currentUser.email,
+      );
+
+      const policyStatus =
+        await partnerApi.getPolicyStatus();
+
+      const accepted =
+        policyStatus.terms_accepted &&
+        policyStatus.privacy_policy_accepted;
+      if (!accepted) {
+        setShowConsentModal(true);
+        return;
+      }
+
+
+      // =====================================================
+      // STEP 4
+      // Biometric verification
+      // =====================================================
+
+      const verified =
+        await verifyDeviceSecurity();
+
+
+      if (!verified) {
+
+        try {
+          await authApi.logout();
+        } catch (error) {
+          console.error(
+            "❌ Backend logout after biometric failure:",
+            error,
+          );
+        }
+
+        showAlert(
+          "Verification Failed",
+          "Device authentication failed.",
+        );
+
+        return;
+      }
+
+
+      // =====================================================
+      // STEP 5
+      // Push notification registration
+      // =====================================================
+
+      // =====================================================
+      // PUSH NOTIFICATION REGISTRATION
+      // =====================================================
+
+      const token =
+        await registerForPushNotificationsAsync();
+
+      console.log(
+        "Push Token:",
+        token,
+      );
+
+
+      // Keep existing push-token functionality for now.
+      // =====================================================
+      // PUSH NOTIFICATION REGISTRATION
+      // =====================================================
+
+
+
+
+      // =====================================================
+      // STEP 6
+      // Existing notification scheduling
+      // =====================================================
+
+      await scheduleDailyDutyReminders();
+
+
+      // =====================================================
+      // STEP 7
+      // Enter Partner App
+      // =====================================================
+
+      router.replace("./my-role");
+
+
+    } catch (err: any) {
+
+      console.error(
+        "❌ Backend login error:",
+        err,
+      );
+
+
+      showAlert(
+        "Login Failed",
+        err?.message ||
         "An error occurred during login.",
-    );
+      );
 
 
-  } finally {
+    } finally {
 
-    setLoading(false);
-  }
-};
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptPolicies = async () => {
+    try {
+      setLoading(true);
+
+      await partnerApi.acceptPolicies();
+
+      setShowConsentModal(false);
+
+      router.replace("./my-role");
+
+    } catch (error) {
+
+      console.error(error);
+
+      showAlert(
+        "Error",
+        "Unable to save consent."
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
   // const getCleanMobile = () => mobile.replace(/\D/g, "");
 
   // const checkIfMobileRegistered = async () => {
@@ -1265,87 +1354,87 @@ console.log(
 
 
   const handleUnlock = async () => {
-  if (loading) return;
+    if (loading) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
+    try {
 
-    // -----------------------------------------------------
-    // Validate existing backend session
-    // -----------------------------------------------------
+      // -----------------------------------------------------
+      // Validate existing backend session
+      // -----------------------------------------------------
 
-    const currentUser =
-      await authApi.me();
+      const currentUser =
+        await authApi.me();
 
-    console.log(
-      "✅ Backend session valid:",
-      currentUser.id,
-      currentUser.email,
-    );
-
-
-    // -----------------------------------------------------
-    // Device authentication
-    // -----------------------------------------------------
-
-    const verified =
-      await verifyDeviceSecurity();
+      console.log(
+        "✅ Backend session valid:",
+        currentUser.id,
+        currentUser.email,
+      );
 
 
-    if (!verified) {
+      // -----------------------------------------------------
+      // Device authentication
+      // -----------------------------------------------------
 
-      try {
-        await authApi.logout();
-      } catch (error) {
-        console.error(
-          "❌ Backend logout failed:",
-          error,
+      const verified =
+        await verifyDeviceSecurity();
+
+
+      if (!verified) {
+
+        try {
+          await authApi.logout();
+        } catch (error) {
+          console.error(
+            "❌ Backend logout failed:",
+            error,
+          );
+        }
+
+        setSessionExists(false);
+
+        showAlert(
+          "Verification Failed",
+          "Device authentication failed.",
         );
+
+        return;
       }
+
+
+      // -----------------------------------------------------
+      // Enter Partner App
+      // -----------------------------------------------------
+
+      router.replace("./my-role");
+
+    } catch (error) {
+
+      console.error(
+        "❌ Backend session validation failed:",
+        error,
+      );
+
+      const {
+        clearAuthTokens,
+      } = await import("../lib/api");
+
+      await clearAuthTokens();
 
       setSessionExists(false);
 
       showAlert(
-        "Verification Failed",
-        "Device authentication failed.",
+        "Session Expired",
+        "Please login again.",
       );
 
-      return;
+    } finally {
+
+      setLoading(false);
     }
-
-
-    // -----------------------------------------------------
-    // Enter Partner App
-    // -----------------------------------------------------
-
-    router.replace("./my-role");
-
-  } catch (error) {
-
-    console.error(
-      "❌ Backend session validation failed:",
-      error,
-    );
-
-    const {
-      clearAuthTokens,
-    } = await import("../lib/api");
-
-    await clearAuthTokens();
-
-    setSessionExists(false);
-
-    showAlert(
-      "Session Expired",
-      "Please login again.",
-    );
-
-  } finally {
-
-    setLoading(false);
-  }
-};
+  };
 
   if (checkingSession) {
     return (
@@ -1426,6 +1515,137 @@ console.log(
                 {showPassword ? <EyeOff /> : <Eye />}
               </TouchableOpacity>
             </View>
+
+            {/* <View style={{ marginBottom: 20 }}>
+
+              <TouchableOpacity
+                disabled={alreadyAccepted}
+                onPress={() =>
+                  setPrivacyAccepted(
+                    !privacyAccepted
+                  )
+                }
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <Ionicons
+                  name={
+                    privacyAccepted
+                      ? "checkbox"
+                      : "square-outline"
+                  }
+                  size={22}
+                  color={
+                    alreadyAccepted
+                      ? "green"
+                      : "#000"
+                  }
+                />
+
+                <Text
+                  style={{
+                    marginLeft: 8,
+                    color: "#333",
+                  }}
+                >
+                  I agree to{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowPrivacyModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Privacy Policy
+                  </Text>
+                </TouchableOpacity>
+
+                {alreadyAccepted && (
+                  <Text
+                    style={{
+                      color: "green",
+                      marginLeft: 8,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Accepted
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                disabled={alreadyAccepted}
+                onPress={() =>
+                  setTermsAccepted(
+                    !termsAccepted
+                  )
+                }
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons
+                  name={
+                    termsAccepted
+                      ? "checkbox"
+                      : "square-outline"
+                  }
+                  size={22}
+                  color={
+                    alreadyAccepted
+                      ? "green"
+                      : "#000"
+                  }
+                />
+
+                <Text
+                  style={{
+                    marginLeft: 8,
+                    color: "#333",
+                  }}
+                >
+                  I agree to{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowTermsModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Terms & Conditions
+                  </Text>
+                </TouchableOpacity>
+
+                {alreadyAccepted && (
+                  <Text
+                    style={{
+                      color: "green",
+                      marginLeft: 8,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Accepted
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+            </View> */}
 
             <TouchableOpacity
               style={styles.primaryBtn}
@@ -1539,6 +1759,381 @@ console.log(
         )} */}
       </ScrollView>
 
+      <Modal
+        visible={showConsentModal}
+        transparent
+        animationType="slide"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModalCard}>
+
+            <View
+              style={{
+                width: "100%",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "800",
+                  color: "#111827",
+                }}
+              >
+                Consent Required
+              </Text>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  setShowConsentModal(false);
+
+                  await authApi.logout();
+
+                  const { clearAuthTokens } =
+                    await import("../lib/api");
+
+                  await clearAuthTokens();
+                }}
+              >
+                <Ionicons
+                  name="close"
+                  size={28}
+                  color="#000"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                textAlign: "center",
+                marginTop: 10,
+                marginBottom: 20,
+              }}
+            >
+              To continue using The Neatify Team Partner App,
+              please accept the Privacy Policy
+              and Terms & Conditions.
+            </Text>
+
+            {/* Privacy Policy */}
+            <TouchableOpacity
+              onPress={() =>
+                setModalPrivacyAccepted(
+                  !modalPrivacyAccepted
+                )
+              }
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                width: "100%",
+                marginBottom: 16,
+              }}
+            >
+              <Ionicons
+                name={
+                  modalPrivacyAccepted
+                    ? "checkbox"
+                    : "square-outline"
+                }
+                size={22}
+                color="#000"
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  flex: 1,
+                  marginLeft: 10,
+                }}
+              >
+                <Text>
+                  I agree to the{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowPrivacyModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                      textDecorationLine: "underline",
+
+                    }}
+                  >
+                    Privacy Policy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+
+            {/* Terms & Conditions */}
+            <TouchableOpacity
+              onPress={() =>
+                setModalTermsAccepted(
+                  !modalTermsAccepted
+                )
+              }
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                width: "100%",
+                marginBottom: 20,
+              }}
+            >
+              <Ionicons
+                name={
+                  modalTermsAccepted
+                    ? "checkbox"
+                    : "square-outline"
+                }
+                size={22}
+                color="#000"
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  flex: 1,
+                  marginLeft: 10,
+                }}
+              >
+                <Text>
+                  I agree to the{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowTermsModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                      textDecorationLine: "underline",
+
+                    }}
+                  >
+                    Terms & Conditions
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.primaryBtn,
+                (!modalTermsAccepted ||
+                  !modalPrivacyAccepted) && {
+                  opacity: 0.5,
+                },
+              ]}
+              disabled={
+                !modalTermsAccepted ||
+                !modalPrivacyAccepted
+              }
+              onPress={handleAcceptPolicies}
+            >
+              <Text style={styles.primaryBtnText}>
+                Accept & Continue
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+      >
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+
+          <View
+            style={{
+              padding: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: "#e5e7eb",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+              }}
+            >
+              Privacy Policy
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setShowPrivacyModal(false)
+              }
+            >
+              <Ionicons
+                name="close"
+                size={28}
+                color="#000"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={{ padding: 20 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: termsContent }}
+              tagsStyles={{
+                h1: {
+                  fontSize: 26,
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                },
+                h2: {
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  marginTop: 16,
+                  marginBottom: 8,
+                },
+                p: {
+                  fontSize: 15,
+                  lineHeight: 24,
+                  color: "#374151",
+                  marginBottom: 10,
+                },
+                li: {
+                  marginBottom: 6,
+                },
+              }}
+            />
+          </ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              {
+                marginHorizontal: 20,
+                marginBottom: 20,
+                width: "90%",
+                alignSelf: "center",
+              }
+            ]}
+            onPress={() => {
+              setModalPrivacyAccepted(true);
+              setShowPrivacyModal(false);
+            }}
+          >
+            <Text style={styles.primaryBtnText}>
+              I Understand & Agree
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+      >
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+
+          <View
+            style={{
+              padding: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: "#e5e7eb",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+              }}
+            >
+              Terms & Conditions
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setShowTermsModal(false)
+              }
+            >
+              <Ionicons
+                name="close"
+                size={28}
+                color="#000"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={{ padding: 20 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: termsContent }}
+              tagsStyles={{
+                h1: {
+                  fontSize: 26,
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                },
+                h2: {
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  marginTop: 16,
+                  marginBottom: 8,
+                },
+                p: {
+                  fontSize: 15,
+                  lineHeight: 24,
+                  color: "#374151",
+                  marginBottom: 10,
+                },
+                li: {
+                  marginBottom: 6,
+                },
+              }}
+            />
+          </ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              {
+                marginHorizontal: 20,
+                marginBottom: 20,
+                width: "90%",
+                alignSelf: "center",
+              }
+            ]}
+            onPress={() => {
+              setModalTermsAccepted(true);
+              setShowTermsModal(false);
+            }}
+          >
+            <Text style={styles.primaryBtnText}>
+              I Understand & Agree
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+      </Modal>
+
       {/* ================= CUSTOM POPUP MODAL ================= */}
       <Modal
         visible={alertModal.visible}
@@ -1580,7 +2175,7 @@ console.log(
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 }
 

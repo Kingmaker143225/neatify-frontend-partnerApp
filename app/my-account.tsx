@@ -1932,11 +1932,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
+import RenderHtml from "react-native-render-html";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { authApi, partnerApi, ProfileResponse, PartnerProfile } from "../lib/api";
+import { authApi, partnerApi, PartnerProfile, ProfileResponse } from "../lib/api";
 import { turnOffDutyAndLogout } from "../lib/logout";
 
 /* ================= SCREEN ================= */
@@ -1953,6 +1955,15 @@ export default function MyAccountScreen() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
   const [customerCareModalVisible, setCustomerCareModalVisible] = useState(false);
+
+  const [policyStatus, setPolicyStatus] = useState<any>(null);
+
+  const [policyContent, setPolicyContent] = useState("");
+  const [termsContent, setTermsContent] = useState("");
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const { width } = useWindowDimensions();
 
   /* ================= LOAD PROFILE ================= */
   useEffect(() => {
@@ -1980,9 +1991,9 @@ export default function MyAccountScreen() {
         console.log("✅ Partner profile:", JSON.stringify(profileResponse, null, 2));
 
         // Handle either direct profile response or { profile: {...} } or { data: {...} }
-        const profile: PartnerProfile | undefined = 
-          profileResponse?.profile ?? 
-          profileResponse?.data ?? 
+        const profile: PartnerProfile | undefined =
+          profileResponse?.profile ??
+          profileResponse?.data ??
           profileResponse as unknown as PartnerProfile;
 
         if (!profile) {
@@ -2027,6 +2038,21 @@ export default function MyAccountScreen() {
           error instanceof Error ? error.message : "Unable to load your profile."
         );
       } finally {
+        const status =
+          await partnerApi.getPolicyStatus();
+
+        setPolicyStatus(status);
+
+        const policies =
+          await partnerApi.getPolicies();
+
+        setPolicyContent(
+          policies.user_policies || ""
+        );
+
+        setTermsContent(
+          policies.terms_and_conditions || ""
+        );
         setLoading(false);
       }
     };
@@ -2108,12 +2134,6 @@ export default function MyAccountScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* ================= HEADER ================= */}
-        <View style={styles.headerCard}>
-          <View>
-            <Text style={styles.headerTitle}>My Profile</Text>
-          </View>
-        </View>
 
         {/* ================= AVATAR ================= */}
         <View style={styles.avatarWrap}>
@@ -2131,6 +2151,101 @@ export default function MyAccountScreen() {
         <ProfileField label="EMAIL" value={email} />
         <ProfileField label="PHONE NUMBER" value={phone} />
 
+        {policyStatus?.terms_accepted &&
+          policyStatus?.privacy_policy_accepted && (
+
+            <View style={styles.fieldCard}>
+              <Text style={styles.fieldLabel}>
+                POLICY ACCEPTANCE
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 8,
+                }}
+              >
+                <Ionicons
+                  name="checkbox"
+                  size={18}
+                  color="green"
+                />
+
+                <Text
+                  style={{
+                    marginLeft: 8,
+                  }}
+                >
+                  I agree to the{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowPrivacyModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                      textDecorationLine: "underline",
+                    }}
+                  >
+                    Privacy Policy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 8,
+                }}
+              >
+                <Ionicons
+                  name="checkbox"
+                  size={18}
+                  color="green"
+                />
+
+                <Text
+                  style={{
+                    marginLeft: 8,
+                  }}
+                >
+                  I agree to the{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShowTermsModal(true)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: "700",
+                      textDecorationLine: "underline",
+                    }}
+                  >
+                    Terms & Conditions
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text
+                style={{
+                  color: "green",
+                  fontWeight: "700",
+                  marginTop: 8,
+                }}
+              >
+                Accepted
+              </Text>
+            </View>
+          )}
         {/* ================= CUSTOMER CARE BUTTON ================= */}
         <View style={styles.customerCareWrap}>
           <TouchableOpacity
@@ -2155,6 +2270,158 @@ export default function MyAccountScreen() {
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+      >
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#fff",
+          }}
+        >
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+              }}
+            >
+              Privacy Policy
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setShowPrivacyModal(false)
+              }
+            >
+              <Ionicons
+                name="close"
+                size={28}
+                color="#000"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={{
+              paddingHorizontal: 20,
+            }}
+          >
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: policyContent }}
+              tagsStyles={{
+                h1: {
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                },
+                h2: {
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  marginTop: 12,
+                  marginBottom: 8,
+                },
+                p: {
+                  fontSize: 15,
+                  lineHeight: 24,
+                  color: "#374151",
+                },
+                li: {
+                  marginBottom: 6,
+                },
+              }}
+            />
+          </ScrollView>
+
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+      >
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#fff",
+          }}
+        >
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+              }}
+            >
+              Terms & Conditions
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setShowTermsModal(false)
+              }
+            >
+              <Ionicons
+                name="close"
+                size={28}
+                color="#000"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={{
+              paddingHorizontal: 20,
+            }}
+          >
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: termsContent }}
+              tagsStyles={{
+                h1: {
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                },
+                h2: {
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  marginTop: 12,
+                  marginBottom: 8,
+                },
+                p: {
+                  fontSize: 15,
+                  lineHeight: 24,
+                  color: "#374151",
+                },
+                li: {
+                  marginBottom: 6,
+                },
+              }}
+            />
+          </ScrollView>
+
+        </SafeAreaView>
+      </Modal>
 
       {/* ================= CUSTOM LOGOUT MODAL ================= */}
       <Modal
@@ -2295,7 +2562,7 @@ const styles = StyleSheet.create({
   fieldCard: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
-    marginBottom: 10,
+    marginBottom: 6,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
@@ -2321,7 +2588,7 @@ const styles = StyleSheet.create({
 
   logoutBtn: {
     marginHorizontal: 20,
-    marginTop: 14,
+    marginTop: 8,
     backgroundColor: "#FFD700",
     paddingVertical: 14,
     borderRadius: 20,
@@ -2336,7 +2603,7 @@ const styles = StyleSheet.create({
 
   customerCareWrap: {
     alignItems: "flex-end",
-    marginTop: 12,
+    marginTop: 2,
     marginRight: 20,
   },
 

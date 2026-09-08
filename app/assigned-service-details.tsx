@@ -2770,7 +2770,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
@@ -2796,7 +2795,7 @@ import { partnerApi } from "../lib/api";
 
 export default function AssignedServiceDetails() {
   const params = useLocalSearchParams();
-  
+
   // Parse booking from params
   let parsedBooking = null;
   try {
@@ -2874,7 +2873,7 @@ export default function AssignedServiceDetails() {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>No booking data available</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={{ marginTop: 20, backgroundColor: "#FFD700", padding: 12, borderRadius: 8 }}
           onPress={() => router.back()}
         >
@@ -3119,7 +3118,7 @@ export default function AssignedServiceDetails() {
   useEffect(() => {
     (async () => {
       if (!booking) return;
-      
+
       const saved = await AsyncStorage.getItem(STORAGE_KEY);
       if (saved) {
         const d = JSON.parse(saved);
@@ -3194,7 +3193,7 @@ export default function AssignedServiceDetails() {
 
   useEffect(() => {
     if (!booking || !STORAGE_KEY) return;
-    
+
     AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -3225,39 +3224,50 @@ export default function AssignedServiceDetails() {
 
   useEffect(() => {
     if (!booking) return;
-    
+
     const loadBookingDetails = async () => {
       try {
         const response = await partnerApi.getBookingDetails(booking.id);
         const data = response?.data;
 
+        console.log(
+          "BOOKING DETAILS FULL RESPONSE:",
+          JSON.stringify(response, null, 2)
+        );
+
         if (!data) {
           console.log("Booking details not found");
           return;
+
         }
 
-        const service = Array.isArray(data.services) ? data.services[0] : null;
+        const bookingService = data?.services?.[0];
+        const serviceInfo = data?.services?.[0];
 
-        if (!service) {
+        if (!bookingService || !serviceInfo) {
           console.log("No service found");
           return;
         }
 
-        const extractedServiceId = service.id;
-        if (extractedServiceId) {
-          setServiceId(extractedServiceId);
-        }
+        setServiceId(bookingService.id);
 
-        const rawAmount = service.staff_amount ?? 0;
-        const cleanedAmount = Number(String(rawAmount).replace(/[^0-9.]/g, ""));
+        const rawAmount = serviceInfo.staff_amount ?? 0;
+        const cleanedAmount = Number(
+          String(rawAmount).replace(/[^0-9.]/g, "")
+        );
+
         setStaffAmount(cleanedAmount);
-        setServiceType(String(service.service_type || "").toUpperCase());
 
-        console.log("SERVICE TYPE:", service.service_type);
+        setServiceType(
+          String(serviceInfo.service_type || "").toUpperCase()
+        );
+
         console.log("STAFF AMOUNT:", cleanedAmount);
+
       } catch (error) {
         console.log("Failed to load booking details:", error);
       }
+
     };
 
     loadBookingDetails();
@@ -3628,61 +3638,61 @@ export default function AssignedServiceDetails() {
 
                 {(Object.keys(afterUploads).length === activeFields.length ||
                   endPhotoSkipped) && (
-                  <>
-                    <View ref={endOtpRef}>
-                      <Text style={styles.label}>End OTP</Text>
-                      <TextInput
-                        style={[
-                          styles.otpInput,
-                          endVerified && {
-                            backgroundColor: "#e5e5e5",
-                            color: "#777",
-                          },
-                        ]}
-                        value={endOtp}
-                        onChangeText={setEndOtp}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        editable={!endVerified}
-                        onFocus={() => {
-                          if (!endVerified) {
-                            setTimeout(() => {
-                              endOtpRef.current?.measureLayout(
-                                scrollRef.current as any,
-                                (x, y) => {
-                                  scrollRef.current?.scrollTo({
-                                    y: y - 120,
-                                    animated: true,
-                                  });
-                                },
-                                () => {},
-                              );
-                            }, 250);
-                          }
-                        }}
-                      />
-                    </View>
-                    {endVerified && (
-                      <View style={styles.verifiedRow}>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={16}
-                          color="green"
+                    <>
+                      <View ref={endOtpRef}>
+                        <Text style={styles.label}>End OTP</Text>
+                        <TextInput
+                          style={[
+                            styles.otpInput,
+                            endVerified && {
+                              backgroundColor: "#e5e5e5",
+                              color: "#777",
+                            },
+                          ]}
+                          value={endOtp}
+                          onChangeText={setEndOtp}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          editable={!endVerified}
+                          onFocus={() => {
+                            if (!endVerified) {
+                              setTimeout(() => {
+                                endOtpRef.current?.measureLayout(
+                                  scrollRef.current as any,
+                                  (x, y) => {
+                                    scrollRef.current?.scrollTo({
+                                      y: y - 120,
+                                      animated: true,
+                                    });
+                                  },
+                                  () => { },
+                                );
+                              }, 250);
+                            }
+                          }}
                         />
-                        <Text style={styles.verifiedText}>Verified</Text>
                       </View>
-                    )}
+                      {endVerified && (
+                        <View style={styles.verifiedRow}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={16}
+                            color="green"
+                          />
+                          <Text style={styles.verifiedText}>Verified</Text>
+                        </View>
+                      )}
 
-                    {!endVerified && (
-                      <TouchableOpacity
-                        style={styles.btn}
-                        onPress={verifyEndOtp}
-                      >
-                        <Text style={styles.btnText}>Verify End OTP</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
+                      {!endVerified && (
+                        <TouchableOpacity
+                          style={styles.btn}
+                          onPress={verifyEndOtp}
+                        >
+                          <Text style={styles.btnText}>Verify End OTP</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
               </>
             )}
 
@@ -3705,7 +3715,7 @@ export default function AssignedServiceDetails() {
                       if (!response?.success) {
                         throw new Error(
                           response?.message ||
-                            "Failed to complete service.",
+                          "Failed to complete service.",
                         );
                       }
 

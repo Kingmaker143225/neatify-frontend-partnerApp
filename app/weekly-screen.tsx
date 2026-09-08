@@ -665,7 +665,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   ScrollView,
@@ -768,9 +768,9 @@ const WeeklyScreen = () => {
       lastDay.day() === 6
         ? lastDay
         : lastDay.add(
-            6 - lastDay.day(),
-            "day"
-          );
+          6 - lastDay.day(),
+          "day"
+        );
 
     return Math.ceil(
       calendarEnd.diff(
@@ -1006,8 +1006,8 @@ const WeeklyScreen = () => {
             router.canGoBack()
               ? router.back()
               : router.replace(
-                  "/dashboard"
-                )
+                "/dashboard"
+              )
           }
         >
           <Ionicons
@@ -1308,8 +1308,8 @@ const WeeklyScreen = () => {
                       style={[
                         styles.modalItem,
                         selectedYear ===
-                          year &&
-                          styles.modalItemActive,
+                        year &&
+                        styles.modalItemActive,
                       ]}
                       onPress={() =>
                         setSelectedYear(
@@ -1321,8 +1321,8 @@ const WeeklyScreen = () => {
                         style={[
                           styles.modalText,
                           selectedYear ===
-                            year &&
-                            styles.modalTextActive,
+                          year &&
+                          styles.modalTextActive,
                         ]}
                       >
                         {year}
@@ -1395,8 +1395,8 @@ const WeeklyScreen = () => {
                   style={[
                     styles.modalItem,
                     selectedMonth ===
-                      m.value &&
-                      styles.modalItemActive,
+                    m.value &&
+                    styles.modalItemActive,
                   ]}
                   onPress={() =>
                     setSelectedMonth(
@@ -1408,8 +1408,8 @@ const WeeklyScreen = () => {
                     style={[
                       styles.modalText,
                       selectedMonth ===
-                        m.value &&
-                        styles.modalTextActive,
+                      m.value &&
+                      styles.modalTextActive,
                     ]}
                   >
                     {m.label}
@@ -1489,7 +1489,7 @@ const WeeklyScreen = () => {
                   style={[
                     styles.modalItem,
                     selectedWeek === w &&
-                      styles.modalItemActive,
+                    styles.modalItemActive,
                   ]}
                   onPress={() =>
                     setSelectedWeek(w)
@@ -1499,8 +1499,8 @@ const WeeklyScreen = () => {
                     style={[
                       styles.modalText,
                       selectedWeek ===
-                        w &&
-                        styles.modalTextActive,
+                      w &&
+                      styles.modalTextActive,
                     ]}
                   >
                     {(() => {
